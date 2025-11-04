@@ -1,4 +1,523 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farm Orders</title>
+    <style>
+    :root {
+        --primary-color: #4CAF50;
+        --secondary-color: #673AB7;
+        --danger-color: #ff4444;
+        --background-color: #f8f9fa;
+        --card-background: #ffffff;
+        --border-color: #cccccc;
+        --text-color: #333333;
+    }
+
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: rgb(25, 103, 210);
+        margin: 0;
+        padding: 0;
+        color: var(--text-color);
+        line-height: 1.4;
+    }
+
+    .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 15px;
+    }
+
+    header {
+        background: #202124;
+        color: white;
+        padding: 12px 15px;
+        border-radius: 8px 8px 0 0;
+        margin-bottom: 15px;
+    }
+
+    header h1 {
+        margin: 0;
+        font-size: 22px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .subtitle {
+        margin: 4px 0 0;
+        font-size: 13px;
+        opacity: 0.9;
+    }
+
+    .setup-notice {
+        background: rgb(232, 240, 254);
+        border: 1px solid #ccc;
+        padding: 10px 12px;
+        border-radius: 0;
+        margin-bottom: 15px;
+        font-size: 13px;
+    }
+
+    .order-form {
+        background: #f5f5f5;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+    }
+
+    .customer-section {
+        background: white;
+        padding: 15px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        margin-bottom: 15px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .customer-section label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    .customer-section input {
+        width: calc(100% - 16px);
+        padding: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    .selected-items {
+        background: #e8f5e9;
+        padding: 15px;
+        border-radius: 4px;
+        border: 1px solid #c8e6c9;
+        margin-bottom: 15px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .selected-items h3 {
+        margin: 0 0 10px 0;
+        font-size: 15px;
+    }
+
+    .selected-item {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 12px;
+        align-items: center;
+        padding: 6px 8px;
+        margin-bottom: 4px;
+        background: white;
+        border-radius: 0;
+        font-size: 14px;
+        border: 1px solid #ccc;
+    }
+
+    .selected-item > span:nth-child(2) {
+        color: #333;
+        font-family: monospace;
+        min-width: 60px;
+        text-align: right;
+    }
+
+    .selected-item .remove-btn {
+        padding: 2px 8px;
+        font-size: 11px;
+        margin-left: auto;
+    }
+
+    .order-total {
+        text-align: right;
+        font-weight: bold;
+        margin-top: 8px;
+        font-size: 15px;
+    }
+
+    .items-section {
+        background: #f0f0f0;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .items-section h3 {
+        margin: 0 0 12px 0;
+        font-size: 15px;
+    }
+
+    .item-card {
+        background: #ffffff;
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+    }
+    
+    /* NEW: Style for name and price on the same line */
+    .item-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .item-card-header h4 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        flex-grow: 1;
+    }
+
+    .item-card-header .price-display {
+        font-size: 14px;
+        font-weight: bold;
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .item-card-header .price-display input {
+        width: 60px;
+        padding: 2px 4px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        font-size: 13px;
+        text-align: right;
+    }
+
+    .item-name-input {
+        width: 100%;
+        padding: 4px;
+        margin-bottom: 8px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        font-size: 13px;
+        box-sizing: border-box;
+    }
+
+    .quantity-buttons {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 8px;
+    }
+
+    .quantity-buttons button {
+        padding: 4px 8px;
+        border: 1px solid #ccc;
+        background: #e0e0e0;
+        border-radius: 3px;
+        cursor: pointer;
+        min-width: 32px;
+        font-size: 13px;
+        color: #333;
+    }
+
+    .quantity-buttons button:hover {
+        background: #e8e8e8;
+    }
+
+    .quantity-buttons button.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: #45a049;
+    }
+
+    .quantity-buttons input.other {
+        width: 60px;
+        min-width: 60px;
+        padding: 4px;
+        border: 1px solid #ccc;
+        background: white;
+        border-radius: 3px;
+        font-size: 13px;
+        color: #333;
+        height: 26px;
+        box-sizing: border-box;
+        text-align: center;
+    }
+
+    /* Price Section styles removed as requested */
+
+    .add-custom-btn {
+        background: var(--secondary-color);
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        width: auto;
+        margin-top: 10px;
+        font-size: 13px;
+        cursor: pointer;
+        display: block;
+    }
+
+    .submit-btn {
+        width: auto;
+        min-width: 200px;
+        padding: 12px 30px;
+        background: linear-gradient(135deg, #8e44ad, #673AB7);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        margin: 20px auto;
+        display: block;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(103, 58, 183, 0.3);
+    }
+
+    .submit-btn:hover {
+        background: linear-gradient(135deg, #9b59b6, #7742c9);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(103, 58, 183, 0.4);
+    }
+
+    .action-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .secondary-btn {
+        padding: 8px 12px;
+        background: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .remove-btn {
+        background: var(--danger-color);
+        color: white;
+        border: none;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+        .container {
+            padding: 10px;
+        }
+        
+        .quantity-buttons {
+            flex-wrap: wrap;
+        }
+        
+        .quantity-buttons button {
+            flex: 1;
+            min-width: 40px;
+        }
+        
+        .price-section {
+            grid-template-columns: 1fr;
+            gap: 6px;
+        }
+    }
+
+    /* Updated All Orders Section */
+    .section-divider {
+        display: none;
+    }
+
+    .all-orders-section {
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 30px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .orders-header { /* NEW: Flex container for title and discount controls */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 0 0 20px 0;
+        font-size: 15px;
+        color: #333;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .orders-header h3 {
+        margin: 0;
+        font-size: 15px;
+    }
+
+    .discount-controls { /* NEW: Container for discount input and button */
+        display: flex;
+        gap: 5px;
+        align-items: center;
+    }
+
+    .discount-controls input {
+        width: 50px;
+        padding: 4px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 13px;
+        text-align: right;
+    }
+
+    .discount-controls button {
+        padding: 4px 8px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .order-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Highlight adjusted total */
+    .adjusted-total {
+        font-weight: bold;
+        color: var(--danger-color);
+    }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚜 Farm Orders</h1>
+            <p class="subtitle">Multi-user system with Google Sheets backend</p>
+        </header>    
+        <form class="order-form" id="orderForm">
+            <div class="customer-section">
+                <label for="customerName">👤 Customer Name:</label>
+                <input type="text" id="customerName" name="customerName" placeholder="Enter your name" required>
+            </div>
+
+            <div class="selected-items">
+                <h3>📋 Selected Items:</h3>
+                <div id="selectedItemsList">
+                    </div>
+                <div class="order-total">Order Total: $<span id="totalAmount">0.00</span></div>
+            </div>
+
+            <div class="items-section">
+                <h3>🛒 Select Items & Quantities:</h3>
+                
+                <div class="item-card" data-item="chicken">
+                    <div class="item-card-header">
+                        <h4>🍗 Chicken (whole)</h4>
+                        <div class="price-display">
+                            $ <input type="number" class="price" value="5.00" step="0.01">
+                        </div>
+                    </div>
+                    <div class="quantity-buttons">
+                        <button type="button" data-qty="1">1</button>
+                        <button type="button" data-qty="2">2</button>
+                        <button type="button" data-qty="3">3</button>
+                        <button type="button" data-qty="4">4</button>
+                        <button type="button" data-qty="5">5</button>
+                        <input type="number" class="other" placeholder="Other" step="1" min="0">
+                    </div>
+                </div>
+
+                <div class="item-card" data-item="milk">
+                    <div class="item-card-header">
+                        <h4>🥛 Fresh Milk</h4>
+                        <div class="price-display">
+                            $ <input type="number" class="price" value="2.00" step="0.01">
+                        </div>
+                    </div>
+                    <div class="quantity-buttons">
+                        <button type="button" data-qty="0.5">0.5</button>
+                        <button type="button" data-qty="1">1</button>
+                        <button type="button" data-qty="2">2</button>
+                        <button type="button" data-qty="3">3</button>
+                        <button type="button" data-qty="4">4</button>
+                        <input type="number" class="other" placeholder="Other" step="0.5" min="0">
+                    </div>
+                </div>
+
+                <div class="item-card" data-item="eggs">
+                    <div class="item-card-header">
+                        <h4>🥚 Farm Eggs</h4>
+                        <div class="price-display">
+                            $ <input type="number" class="price" value="3.00" step="0.01">
+                        </div>
+                    </div>
+                    <div class="quantity-buttons">
+                        <button type="button" data-qty="1">1</button>
+                        <button type="button" data-qty="2">2</button>
+                        <button type="button" data-qty="3">3</button>
+                        <button type="button" data-qty="4">4</button>
+                        <button type="button" data-qty="5">5</button>
+                        <input type="number" class="other" placeholder="Other" step="1" min="0">
+                    </div>
+                </div>
+
+                <div class="item-card" data-item="paneer">
+                    <div class="item-card-header">
+                        <h4>🧀 Paneer</h4>
+                        <div class="price-display">
+                            $ <input type="number" class="price" value="4.00" step="0.01">
+                        </div>
+                    </div>
+                    <div class="quantity-buttons">
+                        <button type="button" data-qty="1">1</button>
+                        <button type="button" data-qty="2">2</button>
+                        <button type="button" data-qty="3">3</button>
+                        <button type="button" data-qty="4">4</button>
+                        <button type="button" data-qty="5">5</button>
+                        <input type="number" class="other" placeholder="Other" step="1" min="0">
+                    </div>
+                </div>
+                <button type="button" id="addCustomItem" class="add-custom-btn">➕ Add Custom Item</button>
+            </div>
+
+            <button type="submit" id="submitOrder" class="submit-btn">📝 Submit Order</button>
+        </form>
+
+        <div class="section-divider"></div>
+
+        <div class="all-orders-section">
+            <div class="orders-header">
+                <h3>📱 All Orders (From All Users)</h3>
+                <div class="discount-controls">
+                    <label for="orderDiscount">Discount %:</label>
+                    <input type="number" id="orderDiscount" value="0" min="0" max="100" step="0.1">
+                    <button type="button" id="applyDiscountBtn" class="secondary-btn">Apply</button>
+                </div>
+            </div>
+            
+            <div id="allOrdersList">
+                <div class="setup-notice" style="display: none;">
+                    Please configure Google Sheets URL to see all orders
+                </div>
+            </div>
+           <div class="action-buttons">
+    <button type="button" id="refreshOrders" class="secondary-btn" style="background: var(--secondary-color); color: white; border: none;">🔄 Refresh Orders</button>
+    <button type="button" id="shareOrders" class="secondary-btn" style="background: var(--primary-color); color: white; border: none;">📤 Share Orders</button>
+    <button type="button" id="deleteAllOrdersBtn" class="secondary-btn" style="grid-column: 1 / span 2; background: var(--danger-color); color: white; border: none; margin-top: 10px;">
+        🗑️ Delete ALL Orders
+    </button>
+</div>
+        </div>
+    </div>
+    <script>
     // --- CONFIG ---
     const API_URL = 'https://script.google.com/macros/s/AKfycby1OS6uT54RZRjVBNkBTzP8_EwXDEW338c9xuJqcRcTuPr068ruMfbti9itEyDkW8TI/exec'; // Replace with your deployed Apps Script URL
 
@@ -740,3 +1259,6 @@
         }
     }
 </script>
+</body>
+
+</html>
