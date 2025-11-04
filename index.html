@@ -1137,6 +1137,8 @@ async function deleteAllOrders() {
                     btn.classList.remove('active'));
                 document.querySelectorAll('.quantity-buttons input.other').forEach(input => 
                     input.value = '');
+
+                fetchAndDisplayAllOrders();
             } else {
                 alert('Failed to submit order: ' + (result.error || 'Unknown error.'));
             }
@@ -1148,6 +1150,7 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
 
 
 
