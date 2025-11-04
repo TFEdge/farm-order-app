@@ -559,6 +559,7 @@
 
         // Load all items (default prices and custom items) from the sheet
         loadAllItems();
+        fetchAndDisplayAllOrders();
 
         // Add event listeners to all existing default item cards
         itemCardMap.forEach(card => addItemEventListeners(card));
@@ -1088,6 +1089,7 @@ async function fetchAndDisplayAllOrders() {
 </body>
 
 </html>
+
 
 
 
