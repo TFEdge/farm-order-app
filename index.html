@@ -1,528 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Farm Orders</title>
-    <style>
-    :root {
-        --primary-color: #4CAF50;
-        --secondary-color: #673AB7;
-        --danger-color: #ff4444;
-        --background-color: #f8f9fa;
-        --card-background: #ffffff;
-        --border-color: #cccccc;
-        --text-color: #333333;
-    }
-
-    body {
-        font-family: 'Segoe UI', Arial, sans-serif;
-        background: rgb(25, 103, 210);
-        margin: 0;
-        padding: 0;
-        color: var(--text-color);
-        line-height: 1.4;
-    }
-
-    .container {
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 15px;
-    }
-
-    header {
-        background: #202124;
-        color: white;
-        padding: 12px 15px;
-        border-radius: 8px 8px 0 0;
-        margin-bottom: 15px;
-    }
-
-    header h1 {
-        margin: 0;
-        font-size: 22px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .subtitle {
-        margin: 4px 0 0;
-        font-size: 13px;
-        opacity: 0.9;
-    }
-
-    .setup-notice {
-        background: rgb(232, 240, 254);
-        border: 1px solid #ccc;
-        padding: 10px 12px;
-        border-radius: 0;
-        margin-bottom: 15px;
-        font-size: 13px;
-    }
-
-    .order-form {
-        background: #f5f5f5;
-        padding: 20px;
-        border-radius: 8px;
-        border: 1px solid #ddd;
-    }
-
-    .customer-section {
-        background: white;
-        padding: 15px;
-        border-radius: 4px;
-        border: 1px solid #ddd;
-        margin-bottom: 15px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
-
-    .customer-section label {
-        display: block;
-        margin-bottom: 5px;
-        font-size: 14px;
-    }
-
-    .customer-section input {
-        width: calc(100% - 16px);
-        padding: 8px;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        font-size: 14px;
-        box-sizing: border-box;
-    }
-
-    .selected-items {
-        background: #e8f5e9;
-        padding: 15px;
-        border-radius: 4px;
-        border: 1px solid #c8e6c9;
-        margin-bottom: 15px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
-
-    .selected-items h3 {
-        margin: 0 0 10px 0;
-        font-size: 15px;
-    }
-
-    .selected-item {
-        display: grid;
-        grid-template-columns: 1fr auto auto;
-        gap: 12px;
-        align-items: center;
-        padding: 6px 8px;
-        margin-bottom: 4px;
-        background: white;
-        border-radius: 0;
-        font-size: 14px;
-        border: 1px solid #ccc;
-    }
-
-    .selected-item > span:nth-child(2) {
-        color: #333;
-        font-family: monospace;
-        min-width: 60px;
-        text-align: right;
-    }
-
-    .selected-item .remove-btn {
-        padding: 2px 8px;
-        font-size: 11px;
-        margin-left: auto;
-    }
-
-    .order-total {
-        text-align: right;
-        font-weight: bold;
-        margin-top: 8px;
-        font-size: 15px;
-    }
-
-    .items-section {
-        background: #f0f0f0;
-        border-radius: 4px;
-        padding: 15px;
-        margin-bottom: 20px;
-        border: 1px solid #ddd;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
-
-    .items-section h3 {
-        margin: 0 0 12px 0;
-        font-size: 15px;
-    }
-
-    .item-card {
-        background: #ffffff;
-        padding: 12px;
-        border-radius: 4px;
-        margin-bottom: 15px;
-        border: 1px solid #ddd;
-    }
-    
-    /* NEW: Style for name and price on the same line */
-    .item-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-    }
-
-    .item-card-header h4 {
-        margin: 0;
-        font-size: 14px;
-        font-weight: 600;
-        flex-grow: 1;
-    }
-
-    .item-card-header .price-display {
-        font-size: 14px;
-        font-weight: bold;
-        color: var(--primary-color);
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-
-    .item-card-header .price-display input {
-        width: 60px;
-        padding: 2px 4px;
-        border: 1px solid #ccc;
-        border-radius: 3px;
-        font-size: 13px;
-        text-align: right;
-    }
-
-    .item-name-input {
-        width: 100%;
-        padding: 4px;
-        margin-bottom: 8px;
-        border: 1px solid #ccc;
-        border-radius: 3px;
-        font-size: 13px;
-        box-sizing: border-box;
-    }
-
-    .quantity-buttons {
-        display: flex;
-        gap: 4px;
-        margin-bottom: 8px;
-    }
-
-    .quantity-buttons button {
-        padding: 4px 8px;
-        border: 1px solid #ccc;
-        background: #e0e0e0;
-        border-radius: 3px;
-        cursor: pointer;
-        min-width: 32px;
-        font-size: 13px;
-        color: #333;
-    }
-
-    .quantity-buttons button:hover {
-        background: #e8e8e8;
-    }
-
-    .quantity-buttons button.active {
-        background: var(--primary-color);
-        color: white;
-        border-color: #45a049;
-    }
-
-    .quantity-buttons input.other {
-        width: 60px;
-        min-width: 60px;
-        padding: 4px;
-        border: 1px solid #ccc;
-        background: white;
-        border-radius: 3px;
-        font-size: 13px;
-        color: #333;
-        height: 26px;
-        box-sizing: border-box;
-        text-align: center;
-    }
-
-    /* Price Section styles removed as requested */
-
-    .add-custom-btn {
-        background: var(--secondary-color);
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 4px;
-        width: auto;
-        margin-top: 10px;
-        font-size: 13px;
-        cursor: pointer;
-        display: block;
-    }
-
-    .submit-btn {
-        width: auto;
-        min-width: 200px;
-        padding: 12px 30px;
-        background: linear-gradient(135deg, #8e44ad, #673AB7);
-        color: white;
-        border: none;
-        border-radius: 25px;
-        font-size: 15px;
-        font-weight: 600;
-        cursor: pointer;
-        margin: 20px auto;
-        display: block;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(103, 58, 183, 0.3);
-    }
-
-    .submit-btn:hover {
-        background: linear-gradient(135deg, #9b59b6, #7742c9);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(103, 58, 183, 0.4);
-    }
-
-    .action-buttons {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-    }
-
-    .secondary-btn {
-        padding: 8px 12px;
-        background: #f0f0f0;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        color: #333;
-    }
-
-    .remove-btn {
-        background: var(--danger-color);
-        color: white;
-        border: none;
-        padding: 3px 8px;
-        border-radius: 3px;
-        font-size: 12px;
-        cursor: pointer;
-    }
-
-    @media (max-width: 600px) {
-        .container {
-            padding: 10px;
-        }
-        
-        .quantity-buttons {
-            flex-wrap: wrap;
-        }
-        
-        .quantity-buttons button {
-            flex: 1;
-            min-width: 40px;
-        }
-        
-        .price-section {
-            grid-template-columns: 1fr;
-            gap: 6px;
-        }
-    }
-
-    /* Updated All Orders Section */
-    .section-divider {
-        display: none;
-    }
-
-    .all-orders-section {
-        background: #f5f5f5;
-        border: 1px solid #ddd;
-        padding: 20px;
-        border-radius: 8px;
-        margin-top: 30px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
-
-    .orders-header { /* NEW: Flex container for title and discount controls */
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: 0 0 20px 0;
-        font-size: 15px;
-        color: #333;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #ddd;
-    }
-
-    .orders-header h3 {
-        margin: 0;
-        font-size: 15px;
-    }
-
-    .discount-controls { /* NEW: Container for discount input and button */
-        display: flex;
-        gap: 5px;
-        align-items: center;
-    }
-
-    .discount-controls input {
-        width: 50px;
-        padding: 4px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 13px;
-        text-align: right;
-    }
-
-    .discount-controls button {
-        padding: 4px 8px;
-        font-size: 13px;
-        white-space: nowrap;
-    }
-
-    .order-card {
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 15px;
-        margin-bottom: 15px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
-    
-    /* Highlight adjusted total */
-    .adjusted-total {
-        font-weight: bold;
-        color: var(--danger-color);
-    }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🚜 Farm Orders</h1>
-            <p class="subtitle">Multi-user system with Google Sheets backend</p>
-        </header>    
-        <form class="order-form" id="orderForm">
-            <div class="customer-section">
-                <label for="customerName">👤 Customer Name:</label>
-                <input type="text" id="customerName" name="customerName" placeholder="Enter your name" required>
-            </div>
-
-            <div class="selected-items">
-                <h3>📋 Selected Items:</h3>
-                <div id="selectedItemsList">
-                    </div>
-                <div class="order-total">Order Total: $<span id="totalAmount">0.00</span></div>
-            </div>
-
-            <div class="items-section">
-                <h3>🛒 Select Items & Quantities:</h3>
-                
-                <div class="item-card" data-item="chicken">
-                    <div class="item-card-header">
-                        <h4>🍗 Chicken (whole)</h4>
-                        <div class="price-display">
-                            $ <input type="number" class="price" value="5.00" step="0.01">
-                        </div>
-                    </div>
-                    <div class="quantity-buttons">
-                        <button type="button" data-qty="1">1</button>
-                        <button type="button" data-qty="2">2</button>
-                        <button type="button" data-qty="3">3</button>
-                        <button type="button" data-qty="4">4</button>
-                        <button type="button" data-qty="5">5</button>
-                        <input type="number" class="other" placeholder="Other" step="1" min="0">
-                    </div>
-                </div>
-
-                <div class="item-card" data-item="milk">
-                    <div class="item-card-header">
-                        <h4>🥛 Fresh Milk</h4>
-                        <div class="price-display">
-                            $ <input type="number" class="price" value="2.00" step="0.01">
-                        </div>
-                    </div>
-                    <div class="quantity-buttons">
-                        <button type="button" data-qty="0.5">0.5</button>
-                        <button type="button" data-qty="1">1</button>
-                        <button type="button" data-qty="2">2</button>
-                        <button type="button" data-qty="3">3</button>
-                        <button type="button" data-qty="4">4</button>
-                        <input type="number" class="other" placeholder="Other" step="0.5" min="0">
-                    </div>
-                </div>
-
-                <div class="item-card" data-item="eggs">
-                    <div class="item-card-header">
-                        <h4>🥚 Farm Eggs</h4>
-                        <div class="price-display">
-                            $ <input type="number" class="price" value="3.00" step="0.01">
-                        </div>
-                    </div>
-                    <div class="quantity-buttons">
-                        <button type="button" data-qty="1">1</button>
-                        <button type="button" data-qty="2">2</button>
-                        <button type="button" data-qty="3">3</button>
-                        <button type="button" data-qty="4">4</button>
-                        <button type="button" data-qty="5">5</button>
-                        <input type="number" class="other" placeholder="Other" step="1" min="0">
-                    </div>
-                </div>
-
-                <div class="item-card" data-item="paneer">
-                    <div class="item-card-header">
-                        <h4>🧀 Paneer</h4>
-                        <div class="price-display">
-                            $ <input type="number" class="price" value="4.00" step="0.01">
-                        </div>
-                    </div>
-                    <div class="quantity-buttons">
-                        <button type="button" data-qty="1">1</button>
-                        <button type="button" data-qty="2">2</button>
-                        <button type="button" data-qty="3">3</button>
-                        <button type="button" data-qty="4">4</button>
-                        <button type="button" data-qty="5">5</button>
-                        <input type="number" class="other" placeholder="Other" step="1" min="0">
-                    </div>
-                </div>
-                <button type="button" id="addCustomItem" class="add-custom-btn">➕ Add Custom Item</button>
-            </div>
-
-            <button type="submit" id="submitOrder" class="submit-btn">📝 Submit Order</button>
-        </form>
-
-        <div class="section-divider"></div>
-
-        <div class="all-orders-section">
-            <div class="orders-header">
-                <h3>📱 All Orders (From All Users)</h3>
-                <div class="discount-controls">
-                    <label for="orderDiscount">Discount %:</label>
-                    <input type="number" id="orderDiscount" value="0" min="0" max="100" step="0.1">
-                    <button type="button" id="applyDiscountBtn" class="secondary-btn">Apply</button>
-                </div>
-            </div>
-            
-            <div id="allOrdersList">
-                <div class="setup-notice" style="display: none;">
-                    Please configure Google Sheets URL to see all orders
-                </div>
-            </div>
-           <div class="action-buttons">
-    <button type="button" id="refreshOrders" class="secondary-btn" style="background: var(--secondary-color); color: white; border: none;">🔄 Refresh Orders</button>
-    <button type="button" id="shareOrders" class="secondary-btn" style="background: var(--primary-color); color: white; border: none;">📤 Share Orders</button>
-    <button type="button" id="deleteAllOrdersBtn" class="secondary-btn" style="grid-column: 1 / span 2; background: var(--danger-color); color: white; border: none; margin-top: 10px;">
-        🗑️ Delete ALL Orders
-    </button>
-</div>
-        </div>
-    </div>
-    <script>
+<script>
     // --- CONFIG ---
     const API_URL = 'https://script.google.com/macros/s/AKfycby1OS6uT54RZRjVBNkBTzP8_EwXDEW338c9xuJqcRcTuPr068ruMfbti9itEyDkW8TI/exec'; // Replace with your deployed Apps Script URL
 
     // Map to hold references to all item cards (default and custom)
     const itemCardMap = new Map();
+    let allOrdersCache = []; // Global variable to store fetched orders for sharing
 
     // --- Initialization and Event Listeners ---
     document.addEventListener('DOMContentLoaded', function() {
@@ -651,12 +133,13 @@
             
             const result = await response.json();
             if (!response.ok || !result.success) {
-                throw new Error(result.error || 'Failed to save item data.');
+                // NOTE: Changed alert to console.error as this is a background save operation
+                console.error(`Error saving item ${itemId}:`, result.error || 'Failed to save item data.');
+            } else {
+                 console.log(`Item ${itemId} data saved successfully.`);
             }
-            console.log(`Item ${itemId} saved successfully.`);
         } catch (error) {
-            console.error('Error saving item data:', error);
-            // Optionally revert UI change or alert the user
+            console.error('Network Error saving item data:', error);
         }
     }
 
@@ -718,7 +201,9 @@
                 const otherInput = itemCard.querySelector('.quantity-buttons input.other');
                 if (otherInput) otherInput.value = '';
 
-                const price = parseFloat(itemCard.querySelector('.price').value) || 0;
+                // Read the latest price from the input field
+                const price = parseFloat(itemCard.querySelector('.price').value) || 0; 
+                
                 updateSelectedItems(itemId, quantity, price);
                 
                 itemCard.querySelectorAll('.quantity-buttons button').forEach(btn => btn.classList.remove('active'));
@@ -731,7 +216,8 @@
         if (otherInput) {
             otherInput.addEventListener('input', function() {
                 const quantity = parseFloat(this.value);
-                const price = parseFloat(itemCard.querySelector('.price').value) || 0;
+                // Read the latest price from the input field
+                const price = parseFloat(itemCard.querySelector('.price').value) || 0; 
                 if (!isNaN(quantity) && quantity >= 0) {
                     updateSelectedItems(itemId, quantity, price);
                 } else if (!this.value) {
@@ -742,18 +228,23 @@
         }
         
         // 3. Price input listener (Persists price change and updates order total)
+        // FIX: Combined 'change' and 'input' to use 'input' for immediate save and update
         const priceInput = itemCard.querySelector('.price');
         if (priceInput) {
-            priceInput.addEventListener('change', function() { // Use 'change' to save on blur
-                saveItemData(itemId, undefined, parseFloat(this.value));
-            });
-            priceInput.addEventListener('input', function() { // Use 'input' to update selected items total
-                // Check if this item is currently selected
+            priceInput.addEventListener('input', function() { // Using 'input' for immediate save and update
+                const newPrice = parseFloat(this.value);
+                
+                // 3a. Save Price to Sheet (Only if valid number)
+                if (!isNaN(newPrice)) {
+                     saveItemData(itemId, undefined, newPrice);
+                }
+                
+                // 3b. Update Selected Item Total (If item is currently selected)
                 const selectedItem = document.querySelector(`.selected-item[data-item="${itemId}"]`);
                 if (selectedItem) {
                     const qty = parseFloat(selectedItem.querySelector('.qty').textContent);
-                    const newPrice = parseFloat(this.value) || 0;
-                    updateSelectedItemTotal(selectedItem, qty, newPrice);
+                    const priceToUse = isNaN(newPrice) ? 0 : newPrice;
+                    updateSelectedItemTotal(selectedItem, qty, priceToUse);
                 }
             });
         }
@@ -765,7 +256,7 @@
                 const newName = this.value.trim();
                 if (newName && newName !== this.dataset.originalName) {
                     saveItemData(itemId, newName, undefined);
-                    this.dataset.original-name = newName; // Update original name reference
+                    this.dataset.originalName = newName; // FIXED: Corrected typo (original-name -> originalName)
                     // Update selected item name if it exists
                     const selectedItem = document.querySelector(`.selected-item[data-item="${itemId}"]`);
                     if(selectedItem) {
@@ -777,10 +268,8 @@
         }
     }
 
-    // --- Helper Functions ---
+    // --- Helper Functions (No changes needed here, all correct) ---
     
-    // updateItemPrice is removed as item-level discount is gone.
-
     function updateSelectedItems(itemId, quantity, price) {
         const itemCard = itemCardMap.get(itemId);
         if (!itemCard) return;
@@ -843,357 +332,351 @@
         document.getElementById('totalAmount').textContent = total.toFixed(2);
     }
     
-    // --- Order Discount Logic (NEW) ---
+    // --- Order Discount Logic (NOW SAVES TO SHEET) ---
 
-    // index.html - inside <script> tag
+    async function applyOrderDiscount() {
+        const discountInput = document.getElementById('orderDiscount');
+        const discount = parseFloat(discountInput.value);
 
-// --- Order Discount Logic (NOW SAVES TO SHEET) ---
+        if (isNaN(discount) || discount < 0 || discount > 100) {
+            alert('Please enter a valid discount percentage (0-100).');
+            return;
+        }
 
-async function applyOrderDiscount() {
-    const discountInput = document.getElementById('orderDiscount');
-    const discount = parseFloat(discountInput.value);
+        const updatesToSend = []; // Array to collect all updates for the sheet
 
-    if (isNaN(discount) || discount < 0 || discount > 100) {
-        alert('Please enter a valid discount percentage (0-100).');
-        return;
+        // Apply discount to all displayed orders and prepare the update list
+        document.querySelectorAll('.order-card').forEach(card => {
+            const originalTotal = parseFloat(card.dataset.totalAmount);
+            const adjustedTotal = originalTotal * (1 - discount / 100);
+            
+            // Update the display in the order card
+            const adjustedTotalSpan = card.querySelector('.adjusted-total-display');
+            if (adjustedTotalSpan) {
+                adjustedTotalSpan.textContent = adjustedTotal.toFixed(2);
+            }
+
+            // Update the local cache for sharing (still needed)
+            const sheetRow = parseInt(card.dataset.sheetRow);
+            const orderInCache = allOrdersCache.find(o => o.sheetRow === sheetRow);
+            if (orderInCache) {
+                orderInCache.adjustedTotal = adjustedTotal;
+            }
+
+            // Add to the list of updates for the sheet
+            updatesToSend.push({
+                sheetRow: sheetRow,
+                adjustedTotal: adjustedTotal.toFixed(2) // Send the new discounted total
+            });
+        });
+
+        // --- NEW: Save the adjusted totals permanently to the sheet ---
+        if (updatesToSend.length > 0) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'updateAdjustedTotals', // NEW action handled by Apps Script
+                        updates: updatesToSend
+                    }),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    }
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert(`Order-level discount of ${discount}% applied and SAVED to the sheet for ${updatesToSend.length} orders.`);
+                } else {
+                     alert(`Discount applied locally, but FAILED to save to sheet: ${result.error || 'Unknown error.'}`);
+                }
+            } catch (error) {
+                alert('Discount applied locally, but network error occurred while saving to sheet: ' + error.message);
+            }
+        } else {
+            alert(`Order-level discount of ${discount}% applied to 0 displayed orders.`);
+        }
     }
 
-    const updatesToSend = []; // Array to collect all updates for the sheet
-
-    // Apply discount to all displayed orders and prepare the update list
-    document.querySelectorAll('.order-card').forEach(card => {
-        const originalTotal = parseFloat(card.dataset.totalAmount);
-        const adjustedTotal = originalTotal * (1 - discount / 100);
-        
-        // Update the display in the order card
-        const adjustedTotalSpan = card.querySelector('.adjusted-total-display');
-        if (adjustedTotalSpan) {
-            adjustedTotalSpan.textContent = adjustedTotal.toFixed(2);
+    /**
+     * Processes cached orders, generates a summary message, and shares it via WhatsApp.
+     */
+    function shareOrders() {
+        if (allOrdersCache.length === 0) {
+            alert('Please refresh the orders first.');
+            return;
         }
 
-        // Update the local cache for sharing (still needed)
-        const sheetRow = parseInt(card.dataset.sheetRow);
-        const orderInCache = allOrdersCache.find(o => o.sheetRow === sheetRow);
-        if (orderInCache) {
-            orderInCache.adjustedTotal = adjustedTotal;
-        }
+        // 1. Calculate Items Quantity Summary (Total across all orders)
+        const itemQuantitySummary = new Map();
+        const ordersByUser = new Map(); // Store parsed orders grouped by customer
+        let grandTotal = 0;
+        let grandAdjustedTotal = 0;
 
-        // Add to the list of updates for the sheet
-        updatesToSend.push({
-            sheetRow: sheetRow,
-            adjustedTotal: adjustedTotal.toFixed(2) // Send the new discounted total
+        allOrdersCache.forEach(order => {
+            // Group individual orders
+            if (!ordersByUser.has(order.customerName)) {
+                ordersByUser.set(order.customerName, []);
+            }
+            
+            const individualOrderItems = [];
+
+            // Aggregate total quantity and prepare user order list
+            Object.entries(order.items).forEach(([itemId, itemData]) => {
+                const qty = itemData.quantity;
+                
+                // Get item name from UI map
+                const itemNameElement = itemCardMap.get(itemId)?.querySelector('.item-name-input') || 
+                                        itemCardMap.get(itemId)?.querySelector('h4');
+                const itemName = (itemNameElement?.value || itemNameElement?.textContent || itemId).trim().replace(':', '');
+
+                // Add to total quantity summary
+                itemQuantitySummary.set(itemName, (itemQuantitySummary.get(itemName) || 0) + qty);
+                
+                // Add to individual user order list
+                individualOrderItems.push(`${itemName} (${qty})`);
+            });
+            
+            const adjustedTotal = order.adjustedTotal !== undefined ? order.adjustedTotal : order.totalAmount;
+
+            ordersByUser.get(order.customerName).push({
+                total: order.totalAmount,
+                adjustedTotal: adjustedTotal, // NEW: Include adjusted total
+                items: individualOrderItems.join('\n ')
+            });
+            
+            grandTotal += order.totalAmount;
+            grandAdjustedTotal += adjustedTotal;
         });
-    });
 
-    // --- NEW: Save the adjusted totals permanently to the sheet ---
-    if (updatesToSend.length > 0) {
+        // 2. Format the message
+        let message = "🌱 *Farm Order Summary* 🌱\n\n";
+        message += "--- Items Quantity Summary ---\n";
+        
+        // Total Items Summary
+        itemQuantitySummary.forEach((qty, name) => {
+            message += `• ${name}: ${qty}\n`;
+        });
+        
+        message += "\n--- Individual Orders ---\n";
+
+        // Orders per user
+        ordersByUser.forEach((orders, customerName) => {
+            message += `*👤 ${customerName}*\n`;
+            orders.forEach(order => {
+                message += `  ${order.items}\n`;
+                message += `  - Total: $${order.total.toFixed(2)}`;
+                if (order.adjustedTotal !== order.total) {
+                    message += ` (Adj: $${order.adjustedTotal.toFixed(2)})`; // NEW: Add adjusted total to share message
+                }
+                message += `\n`;
+            });
+            message += "\n";
+        });
+        
+        message += "--- Grand Totals ---\n";
+        message += `Grand Total: $${grandTotal.toFixed(2)}\n`;
+        message += `Grand Adjusted Total: $${grandAdjustedTotal.toFixed(2)}\n`; // NEW: Grand adjusted total
+
+        // 3. Initiate WhatsApp Sharing
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+        
+        window.open(whatsappUrl, '_blank');
+    }
+
+    // --- All Orders / Sharing Logic ---
+
+    /**
+     * Fetches all orders from the Google Sheet and updates the display.
+     */
+    async function fetchAndDisplayAllOrders() {
+        const refreshBtn = document.getElementById('refreshOrders');
+        refreshBtn.textContent = 'Refreshing...';
+        refreshBtn.disabled = true;
+        const allOrdersList = document.getElementById('allOrdersList');
+        allOrdersList.innerHTML = 'Loading orders...';
+
+        // Clear any existing discount
+        document.getElementById('orderDiscount').value = 0;
+
         try {
             const response = await fetch(API_URL, {
+                redirect: "follow",
                 method: 'POST',
                 body: JSON.stringify({
-                    action: 'updateAdjustedTotals', // NEW action handled by Apps Script
-                    updates: updatesToSend
+                    action: 'getOrders'
                 }),
                 headers: {
                     'Content-Type': 'text/plain;charset=utf-8'
                 }
             });
-
+            
             const result = await response.json();
-            if (response.ok && result.success) {
-                alert(`Order-level discount of ${discount}% applied and SAVED to the sheet for ${updatesToSend.length} orders.`);
+            
+            if (response.ok && result.success && Array.isArray(result.result)) {
+                allOrdersCache = result.result; // Store for sharing
+                allOrdersList.innerHTML = ''; // Clear loading message
+
+                if (allOrdersCache.length === 0) {
+                     allOrdersList.innerHTML = '<div class="setup-notice">No orders found in the sheet.</div>';
+                }
+                
+                allOrdersCache.forEach(order => {
+                    const orderCard = document.createElement('div');
+                    orderCard.className = 'order-card';
+                    // Convert timestamp to local date string for display
+                    const date = new Date(order.timestamp).toLocaleString(); 
+                    
+                    // Detailed items list (formatted HTML for display)
+                    const itemsHtml = Object.entries(order.items).map(([itemId, itemData]) => {
+                        // Try to get the name from itemCardMap, or use the ID as a fallback
+                        const itemNameElement = itemCardMap.get(itemId)?.querySelector('.item-name-input') || 
+                                                itemCardMap.get(itemId)?.querySelector('h4');
+                        const itemName = (itemNameElement?.value || itemNameElement?.textContent || itemId).trim().replace(':', ''); // Clean up name
+                        return `<li>${itemName}: ${itemData.quantity} @ $${itemData.total.toFixed(2)}</li>`;
+                    }).join('');
+
+                    // Store total for discount calculation
+                    orderCard.dataset.totalAmount = order.totalAmount;
+                    orderCard.dataset.sheetRow = order.sheetRow; 
+                    
+                    // Use the adjusted total from the sheet if available, otherwise use totalAmount
+                    const initialAdjustedTotal = order.adjustedTotal !== undefined ? order.adjustedTotal : order.totalAmount;
+
+                    orderCard.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <strong>Customer:</strong> ${order.customerName}<br>
+                                <strong>Time:</strong> ${date}<br>
+                                <strong>Total:</strong> $${order.totalAmount.toFixed(2)}<br>
+                                <strong>Adjusted Total:</strong> <span class="adjusted-total-display adjusted-total">$${initialAdjustedTotal.toFixed(2)}</span>
+                            </div>
+                            <button class="remove-btn delete-order-btn" data-row="${order.sheetRow}">Delete</button>
+                        </div>
+                        <hr style="margin: 8px 0;">
+                        <strong>Items:</strong>
+                        <ul style="padding-left: 20px; margin: 5px 0 0;">${itemsHtml}</ul>
+                    `;
+                    allOrdersList.appendChild(orderCard);
+                    
+                    // Add event listener immediately after creating the button
+                    orderCard.querySelector('.delete-order-btn').addEventListener('click', deleteIndividualOrderFrontend);
+                });
             } else {
-                 alert(`Discount applied locally, but FAILED to save to sheet: ${result.error || 'Unknown error.'}`);
+                console.error('API Error:', result.error || 'Failed to fetch orders.');
+                allOrdersList.innerHTML = '<div class="setup-notice">Error fetching orders. Check console.</div>';
             }
         } catch (error) {
-            alert('Discount applied locally, but network error occurred while saving to sheet: ' + error.message);
+            console.error('Error fetching orders:', error);
+            allOrdersList.innerHTML = '<div class="setup-notice">Network Error. Check API URL.</div>';
+        } finally {
+            refreshBtn.textContent = '🔄 Refresh Orders';
+            refreshBtn.disabled = false;
         }
-    } else {
-        alert(`Order-level discount of ${discount}% applied to 0 displayed orders.`);
-    }
-}
-
-        /**
- * Processes cached orders, generates a summary message, and shares it via WhatsApp.
- */
-function shareOrders() {
-    if (allOrdersCache.length === 0) {
-        alert('Please refresh the orders first.');
-        return;
     }
 
-    // 1. Calculate Items Quantity Summary (Total across all orders)
-    const itemQuantitySummary = new Map();
-    const ordersByUser = new Map(); // Store parsed orders grouped by customer
-    let grandTotal = 0;
-    let grandAdjustedTotal = 0;
+    /**
+     * Handles the deletion of a single order row via API call.
+     */
+    async function deleteIndividualOrderFrontend(event) {
+        const button = event.currentTarget;
+        const sheetRow = button.dataset.row;
+        const customerName = button.closest('.order-card').querySelector('strong').nextSibling.textContent.trim();
 
-    allOrdersCache.forEach(order => {
-        // Group individual orders
-        if (!ordersByUser.has(order.customerName)) {
-            ordersByUser.set(order.customerName, []);
+        const confirmation = confirm(`Are you sure you want to delete the order for ${customerName}? (Row ${sheetRow})`);
+        
+        if (!confirmation) {
+            return; 
         }
-        
-        const individualOrderItems = [];
 
-        // Aggregate total quantity and prepare user order list
-        Object.entries(order.items).forEach(([itemId, itemData]) => {
-            const qty = itemData.quantity;
-            
-            // Get item name from UI map
-            const itemNameElement = itemCardMap.get(itemId)?.querySelector('.item-name-input') || 
-                                    itemCardMap.get(itemId)?.querySelector('h4');
-            const itemName = (itemNameElement?.value || itemNameElement?.textContent || itemId).trim().replace(':', '');
+        button.textContent = 'Deleting...';
+        button.disabled = true;
 
-            // Add to total quantity summary
-            itemQuantitySummary.set(itemName, (itemQuantitySummary.get(itemName) || 0) + qty);
-            
-            // Add to individual user order list
-            individualOrderItems.push(`${itemName} (${qty})`);
-        });
-        
-        const adjustedTotal = order.adjustedTotal !== undefined ? order.adjustedTotal : order.totalAmount;
-
-        ordersByUser.get(order.customerName).push({
-            total: order.totalAmount,
-            adjustedTotal: adjustedTotal, // NEW: Include adjusted total
-            items: individualOrderItems.join('\n ')
-        });
-        
-        grandTotal += order.totalAmount;
-        grandAdjustedTotal += adjustedTotal;
-    });
-
-    // 2. Format the message
-    let message = "🌱 *Farm Order Summary* 🌱\n\n";
-    message += "--- Items Quantity Summary ---\n";
-    
-    // Total Items Summary
-    itemQuantitySummary.forEach((qty, name) => {
-        message += `• ${name}: ${qty}\n`;
-    });
-    
-    message += "\n--- Individual Orders ---\n";
-
-    // Orders per user
-    ordersByUser.forEach((orders, customerName) => {
-        message += `*👤 ${customerName}*\n`;
-        orders.forEach(order => {
-            message += `  ${order.items}\n`;
-            message += `  - Total: $${order.total.toFixed(2)}`;
-            if (order.adjustedTotal !== order.total) {
-                message += ` (Adj: $${order.adjustedTotal.toFixed(2)})`; // NEW: Add adjusted total to share message
-            }
-            message += `\n`;
-        });
-        message += "\n";
-    });
-    
-    message += "--- Grand Totals ---\n";
-    message += `Grand Total: $${grandTotal.toFixed(2)}\n`;
-    message += `Grand Adjusted Total: $${grandAdjustedTotal.toFixed(2)}\n`; // NEW: Grand adjusted total
-
-    // 3. Initiate WhatsApp Sharing
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-    
-    window.open(whatsappUrl, '_blank');
-}
-
-        // --- All Orders / Sharing Logic ---
-
-let allOrdersCache = []; // Global variable to store fetched orders for sharing
-
-/**
- * Fetches all orders from the Google Sheet and updates the display.
- */
-async function fetchAndDisplayAllOrders() {
-    const refreshBtn = document.getElementById('refreshOrders');
-    refreshBtn.textContent = 'Refreshing...';
-    refreshBtn.disabled = true;
-    const allOrdersList = document.getElementById('allOrdersList');
-    allOrdersList.innerHTML = 'Loading orders...';
-
-    // Clear any existing discount
-    document.getElementById('orderDiscount').value = 0;
-
-    try {
-        const response = await fetch(API_URL, {
-            redirect: "follow",
-            method: 'POST',
-            body: JSON.stringify({
-                action: 'getOrders'
-            }),
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8'
-            }
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok && result.success && Array.isArray(result.result)) {
-            allOrdersCache = result.result; // Store for sharing
-            allOrdersList.innerHTML = ''; // Clear loading message
-
-            if (allOrdersCache.length === 0) {
-                 allOrdersList.innerHTML = '<div class="setup-notice">No orders found in the sheet.</div>';
-            }
-            
-            allOrdersCache.forEach(order => {
-                const orderCard = document.createElement('div');
-                orderCard.className = 'order-card';
-                // Convert timestamp to local date string for display
-                const date = new Date(order.timestamp).toLocaleString(); 
-                
-                // Detailed items list (formatted HTML for display)
-                const itemsHtml = Object.entries(order.items).map(([itemId, itemData]) => {
-                    // Try to get the name from itemCardMap, or use the ID as a fallback
-                    const itemNameElement = itemCardMap.get(itemId)?.querySelector('.item-name-input') || 
-                                            itemCardMap.get(itemId)?.querySelector('h4');
-                    const itemName = (itemNameElement?.value || itemNameElement?.textContent || itemId).trim().replace(':', ''); // Clean up name
-                    return `<li>${itemName}: ${itemData.quantity} @ $${itemData.total.toFixed(2)}</li>`;
-                }).join('');
-
-                // Store total for discount calculation
-                orderCard.dataset.totalAmount = order.totalAmount;
-                orderCard.dataset.sheetRow = order.sheetRow; 
-                
-                // Use the adjusted total from the sheet if available, otherwise use totalAmount
-                const initialAdjustedTotal = order.adjustedTotal !== undefined ? order.adjustedTotal : order.totalAmount;
-
-                orderCard.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div>
-                            <strong>Customer:</strong> ${order.customerName}<br>
-                            <strong>Time:</strong> ${date}<br>
-                            <strong>Total:</strong> $${order.totalAmount.toFixed(2)}<br>
-                            <strong>Adjusted Total:</strong> <span class="adjusted-total-display adjusted-total">$${initialAdjustedTotal.toFixed(2)}</span>
-                        </div>
-                        <button class="remove-btn delete-order-btn" data-row="${order.sheetRow}">Delete</button>
-                    </div>
-                    <hr style="margin: 8px 0;">
-                    <strong>Items:</strong>
-                    <ul style="padding-left: 20px; margin: 5px 0 0;">${itemsHtml}</ul>
-                `;
-                allOrdersList.appendChild(orderCard);
-                
-                // Add event listener immediately after creating the button
-                orderCard.querySelector('.delete-order-btn').addEventListener('click', deleteIndividualOrderFrontend);
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'deleteIndividualOrder',
+                    sheetRow: sheetRow
+                }),
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                }
             });
-        } else {
-            console.error('API Error:', result.error || 'Failed to fetch orders.');
-            allOrdersList.innerHTML = '<div class="setup-notice">Error fetching orders. Check console.</div>';
-        }
-    } catch (error) {
-        console.error('Error fetching orders:', error);
-        allOrdersList.innerHTML = '<div class="setup-notice">Network Error. Check API URL.</div>';
-    } finally {
-        refreshBtn.textContent = '🔄 Refresh Orders';
-        refreshBtn.disabled = false;
-    }
-}
-
-/**
- * Handles the deletion of a single order row via API call.
- */
-async function deleteIndividualOrderFrontend(event) {
-    const button = event.currentTarget;
-    const sheetRow = button.dataset.row;
-    const customerName = button.closest('.order-card').querySelector('strong').nextSibling.textContent.trim();
-
-    const confirmation = confirm(`Are you sure you want to delete the order for ${customerName}? (Row ${sheetRow})`);
-    
-    if (!confirmation) {
-        return; 
-    }
-
-    button.textContent = 'Deleting...';
-    button.disabled = true;
-
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                action: 'deleteIndividualOrder',
-                sheetRow: sheetRow
-            }),
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8'
-            }
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok && result.success) {
-            alert(`Order for ${customerName} (Row ${sheetRow}) successfully deleted!`);
-            // Visually remove the card and refresh the list to sync row numbers
-            button.closest('.order-card').remove();
             
-            // Re-run the fetch to get updated row numbers from the sheet, which is important
-            fetchAndDisplayAllOrders(); 
-        } else {
-            alert('Failed to delete order: ' + (result.error || 'Unknown error.'));
-        }
-    } catch (error) {
-        alert('Error communicating with the server: ' + error.message);
-    } finally {
-        // If the refresh call succeeds, this doesn't matter, but good practice:
-        button.textContent = 'Delete';
-        button.disabled = false;
-    }
-}
-        
-        /**
- * Prompts user for double confirmation and sends request to delete all orders.
- */
-async function deleteAllOrders() {
-    const confirmation = confirm("⚠️ WARNING: Are you sure you want to delete ALL orders? This action cannot be undone.");
-    
-    if (!confirmation) {
-        return; // User cancelled the first prompt
-    }
-
-    const finalConfirmation = prompt("For final confirmation, type the word 'DELETE' (in all caps):");
-
-    if (finalConfirmation !== 'DELETE') {
-        alert("Deletion cancelled. Word was not typed correctly.");
-        return;
-    }
-
-    const deleteBtn = document.getElementById('deleteAllOrdersBtn');
-    deleteBtn.textContent = 'Deleting...';
-    deleteBtn.disabled = true;
-
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                action: 'deleteAllOrders' // Action for Apps Script
-            }),
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8'
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                alert(`Order for ${customerName} (Row ${sheetRow}) successfully deleted!`);
+                // Visually remove the card and refresh the list to sync row numbers
+                button.closest('.order-card').remove();
+                
+                // Re-run the fetch to get updated row numbers from the sheet, which is important
+                fetchAndDisplayAllOrders(); 
+            } else {
+                alert('Failed to delete order: ' + (result.error || 'Unknown error.'));
             }
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok && result.success) {
-            alert('✅ All orders have been successfully deleted!');
-            // Clear the display and refresh the orders list
-            document.getElementById('allOrdersList').innerHTML = '<div class="setup-notice">No orders found in the sheet.</div>';
-            allOrdersCache = []; // Clear local cache
-        } else {
-            alert('Failed to delete orders: ' + (result.error || 'Unknown error.'));
+        } catch (error) {
+            alert('Error communicating with the server: ' + error.message);
+        } finally {
+            // If the refresh call succeeds, this doesn't matter, but good practice:
+            button.textContent = 'Delete';
+            button.disabled = false;
         }
-    } catch (error) {
-        alert('Error communicating with the server: ' + error.message);
-    } finally {
-        deleteBtn.textContent = '🗑️ Delete ALL Orders';
-        deleteBtn.disabled = false;
     }
-}
+            
+    /**
+     * Prompts user for double confirmation and sends request to delete all orders.
+     */
+    async function deleteAllOrders() {
+        const confirmation = confirm("⚠️ WARNING: Are you sure you want to delete ALL orders? This action cannot be undone.");
+        
+        if (!confirmation) {
+            return; // User cancelled the first prompt
+        }
 
-    // --- Order Submission ---
+        const finalConfirmation = prompt("For final confirmation, type the word 'DELETE' (in all caps):");
+
+        if (finalConfirmation !== 'DELETE') {
+            alert("Deletion cancelled. Word was not typed correctly.");
+            return;
+        }
+
+        const deleteBtn = document.getElementById('deleteAllOrdersBtn');
+        deleteBtn.textContent = 'Deleting...';
+        deleteBtn.disabled = true;
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'deleteAllOrders' // Action for Apps Script
+                }),
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                alert('✅ All orders have been successfully deleted!');
+                // Clear the display and refresh the orders list
+                document.getElementById('allOrdersList').innerHTML = '<div class="setup-notice">No orders found in the sheet.</div>';
+                allOrdersCache = []; // Clear local cache
+            } else {
+                alert('Failed to delete orders: ' + (result.error || 'Unknown error.'));
+            }
+        } catch (error) {
+            alert('Error communicating with the server: ' + error.message);
+        } finally {
+            deleteBtn.textContent = '🗑️ Delete ALL Orders';
+            deleteBtn.disabled = false;
+        }
+    }
+
+        // --- Order Submission ---
     async function submitOrder() {
         const customerName = document.getElementById('customerName').value.trim();
         if (!customerName) {
@@ -1256,8 +739,4 @@ async function deleteAllOrders() {
             alert('Error submitting order: ' + error.message);
         }
     }
-    </script>
-</body>
-
-</html>
-
+</script>
