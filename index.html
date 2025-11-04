@@ -536,10 +536,13 @@
                     Please configure Google Sheets URL to see all orders
                 </div>
             </div>
-            <div class="action-buttons">
-                <button type="button" id="refreshOrders" class="secondary-btn" style="background: var(--secondary-color); color: white; border: none;">🔄 Refresh Orders</button>
-                <button type="button" id="shareOrders" class="secondary-btn" style="background: var(--primary-color); color: white; border: none;">📤 Share Orders</button>
-            </div>
+           <div class="action-buttons">
+    <button type="button" id="refreshOrders" class="secondary-btn" style="background: var(--secondary-color); color: white; border: none;">🔄 Refresh Orders</button>
+    <button type="button" id="shareOrders" class="secondary-btn" style="background: var(--primary-color); color: white; border: none;">📤 Share Orders</button>
+    <button type="button" id="deleteAllOrdersBtn" class="secondary-btn" style="grid-column: 1 / span 2; background: var(--danger-color); color: white; border: none; margin-top: 10px;">
+        🗑️ Delete ALL Orders
+    </button>
+</div>
         </div>
     </div>
     <script>
@@ -577,6 +580,12 @@
     document.getElementById('shareOrders').addEventListener('click', function(e) {
         e.preventDefault();
         shareOrders(); // NEW function
+    });
+
+        // NEW Delete All Orders button listener
+    document.getElementById('deleteAllOrdersBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        deleteAllOrders(); // NEW function call
     });
 
         // Submit order button listener
@@ -1024,6 +1033,56 @@ async function fetchAndDisplayAllOrders() {
     }
 }
 
+        /**
+ * Prompts user for double confirmation and sends request to delete all orders.
+ */
+async function deleteAllOrders() {
+    const confirmation = confirm("⚠️ WARNING: Are you sure you want to delete ALL orders? This action cannot be undone.");
+    
+    if (!confirmation) {
+        return; // User cancelled the first prompt
+    }
+
+    const finalConfirmation = prompt("For final confirmation, type the word 'DELETE' (in all caps):");
+
+    if (finalConfirmation !== 'DELETE') {
+        alert("Deletion cancelled. Word was not typed correctly.");
+        return;
+    }
+
+    const deleteBtn = document.getElementById('deleteAllOrdersBtn');
+    deleteBtn.textContent = 'Deleting...';
+    deleteBtn.disabled = true;
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'deleteAllOrders' // NEW action for Apps Script
+            }),
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            alert('✅ All orders have been successfully deleted!');
+            // Clear the display and refresh the orders list
+            document.getElementById('allOrdersList').innerHTML = '<div class="setup-notice">No orders found in the sheet.</div>';
+            allOrdersCache = []; // Clear local cache
+        } else {
+            alert('Failed to delete orders: ' + (result.error || 'Unknown error.'));
+        }
+    } catch (error) {
+        alert('Error communicating with the server: ' + error.message);
+    } finally {
+        deleteBtn.textContent = '🗑️ Delete ALL Orders';
+        deleteBtn.disabled = false;
+    }
+}
+
     // --- Order Submission ---
     async function submitOrder() {
         const customerName = document.getElementById('customerName').value.trim();
@@ -1089,6 +1148,7 @@ async function fetchAndDisplayAllOrders() {
 </body>
 
 </html>
+
 
 
 
