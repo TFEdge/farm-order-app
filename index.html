@@ -944,7 +944,7 @@ function shareOrders() {
     ordersByUser.forEach((orders, customerName) => {
         message += `*👤 ${customerName}*\n`;
         orders.forEach(order => {
-            message += `  - ${order.items}\n`;
+            message += `  ${order.items}\n`;
             message += `  - Total: $${order.total.toFixed(2)}\n`;
         });
         message += "\n";
@@ -1148,6 +1148,7 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
 
 
 
