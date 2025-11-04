@@ -581,12 +581,13 @@
     async function loadAllItems() {
         try {
             const response = await fetch(API_URL, {
+                redirect: "follow",
                 method: 'POST',
                 body: JSON.stringify({
                     action: 'getItems' // Correct action to get all items
                 }),
                 headers: {
-                    'Content-Type': 'text/plain;charset=utf-8'//'application/json'
+                    'Content-Type': 'text/plain;charset=utf-8'
                 }
             });
             
@@ -929,4 +930,5 @@
 </body>
 
 </html>
+
 
