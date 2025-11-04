@@ -925,7 +925,7 @@ function shareOrders() {
         
         ordersByUser.get(order.customerName).push({
             total: order.totalAmount,
-            items: individualOrderItems.join('\n')
+            items: individualOrderItems.join('\n ')
         });
     });
 
@@ -1211,6 +1211,7 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
 
 
 
