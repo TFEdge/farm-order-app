@@ -566,6 +566,18 @@
         // Add Custom Item button listener
         document.getElementById('addCustomItem').addEventListener('click', addNewCustomItem);
 
+        // Refresh Orders button listener (NEW)
+    document.getElementById('refreshOrders').addEventListener('click', function(e) {
+        e.preventDefault();
+        fetchAndDisplayAllOrders(); // NEW function
+    });
+
+    // Share Orders button listener (NEW)
+    document.getElementById('shareOrders').addEventListener('click', function(e) {
+        e.preventDefault();
+        shareOrders(); // NEW function
+    });
+
         // Submit order button listener
         document.getElementById('submitOrder').addEventListener('click', function(e) {
             e.preventDefault();
@@ -864,6 +876,152 @@
             .reduce((sum, el) => sum + parseFloat(el.textContent), 0);
         document.getElementById('totalAmount').textContent = total.toFixed(2);
     }
+        /**
+ * Processes cached orders, generates a summary message, and shares it via WhatsApp.
+ */
+function shareOrders() {
+    if (allOrdersCache.length === 0) {
+        alert('Please refresh the orders first.');
+        return;
+    }
+
+    // 1. Calculate Items Quantity Summary (Total across all orders)
+    const itemQuantitySummary = new Map();
+    const ordersByUser = new Map(); // Store parsed orders grouped by customer
+
+    allOrdersCache.forEach(order => {
+        // Group individual orders
+        if (!ordersByUser.has(order.customerName)) {
+            ordersByUser.set(order.customerName, []);
+        }
+        
+        const individualOrderItems = [];
+
+        // Aggregate total quantity and prepare user order list
+        Object.entries(order.items).forEach(([itemId, itemData]) => {
+            const qty = itemData.quantity;
+            
+            // Get item name from UI map
+            const itemNameElement = itemCardMap.get(itemId)?.querySelector('.item-name-input') || 
+                                    itemCardMap.get(itemId)?.querySelector('h4');
+            const itemName = (itemNameElement?.value || itemNameElement?.textContent || itemId).trim().replace(':', '');
+
+            // Add to total quantity summary
+            itemQuantitySummary.set(itemName, (itemQuantitySummary.get(itemName) || 0) + qty);
+            
+            // Add to individual user order list
+            individualOrderItems.push(`${itemName} (${qty})`);
+        });
+        
+        ordersByUser.get(order.customerName).push({
+            total: order.totalAmount,
+            items: individualOrderItems.join(', ')
+        });
+    });
+
+    // 2. Format the message
+    let message = "🌱 *Farm Order Summary* 🌱\n\n";
+    message += "--- Items Quantity Summary ---\n";
+    
+    // Total Items Summary
+    itemQuantitySummary.forEach((qty, name) => {
+        message += `• ${name}: ${qty}\n`;
+    });
+    
+    message += "\n--- Individual Orders ---\n";
+
+    // Orders per user
+    ordersByUser.forEach((orders, customerName) => {
+        message += `*👤 ${customerName}*\n`;
+        orders.forEach(order => {
+            message += `  - ${order.items}\n`;
+            message += `  - Total: $${order.total.toFixed(2)}\n`;
+        });
+        message += "\n";
+    });
+    
+    // 3. Initiate WhatsApp Sharing
+    // URL-encode the message for safe transmission
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    
+    // Open the sharing link (will prompt user to select contact in WhatsApp)
+    window.open(whatsappUrl, '_blank');
+}
+
+        // --- All Orders / Sharing Logic ---
+
+let allOrdersCache = []; // Global variable to store fetched orders for sharing
+
+/**
+ * Fetches all orders from the Google Sheet and updates the display.
+ */
+async function fetchAndDisplayAllOrders() {
+    const refreshBtn = document.getElementById('refreshOrders');
+    refreshBtn.textContent = 'Refreshing...';
+    refreshBtn.disabled = true;
+    const allOrdersList = document.getElementById('allOrdersList');
+    allOrdersList.innerHTML = 'Loading orders...';
+
+    try {
+        const response = await fetch(API_URL, {
+            redirect: "follow",
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'getOrders' // NEW action
+            }),
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success && Array.isArray(result.result)) {
+            allOrdersCache = result.result; // Store for sharing
+            allOrdersList.innerHTML = ''; // Clear loading message
+
+            if (allOrdersCache.length === 0) {
+                 allOrdersList.innerHTML = '<div class="setup-notice">No orders found in the sheet.</div>';
+            }
+            
+            allOrdersCache.forEach(order => {
+                const orderCard = document.createElement('div');
+                orderCard.className = 'order-card';
+                // Convert timestamp to local date string for display
+                const date = new Date(order.timestamp).toLocaleString(); 
+                
+                // Detailed items list (formatted HTML for display)
+                const itemsHtml = Object.entries(order.items).map(([itemId, itemData]) => {
+                    // Try to get the name from itemCardMap, or use the ID as a fallback
+                    const itemNameElement = itemCardMap.get(itemId)?.querySelector('.item-name-input') || 
+                                            itemCardMap.get(itemId)?.querySelector('h4');
+                    const itemName = (itemNameElement?.value || itemNameElement?.textContent || itemId).trim().replace(':', ''); // Clean up name
+                    return `<li>${itemName}: ${itemData.quantity} @ $${itemData.total.toFixed(2)}</li>`;
+                }).join('');
+
+                orderCard.innerHTML = `
+                    <strong>Customer:</strong> ${order.customerName}<br>
+                    <strong>Time:</strong> ${date}<br>
+                    <strong>Total:</strong> $${order.totalAmount.toFixed(2)}<br>
+                    <hr style="margin: 8px 0;">
+                    <strong>Items:</strong>
+                    <ul style="padding-left: 20px; margin: 5px 0 0;">${itemsHtml}</ul>
+                `;
+                allOrdersList.appendChild(orderCard);
+            });
+        } else {
+            console.error('API Error:', result.error || 'Failed to fetch orders.');
+            allOrdersList.innerHTML = '<div class="setup-notice">Error fetching orders. Check console.</div>';
+        }
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        allOrdersList.innerHTML = '<div class="setup-notice">Network Error. Check API URL.</div>';
+    } finally {
+        refreshBtn.textContent = '🔄 Refresh Orders';
+        refreshBtn.disabled = false;
+    }
+}
 
     // --- Order Submission ---
     async function submitOrder() {
@@ -930,6 +1088,7 @@
 </body>
 
 </html>
+
 
 
 
