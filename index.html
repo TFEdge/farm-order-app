@@ -845,35 +845,73 @@
     
     // --- Order Discount Logic (NEW) ---
 
-    function applyOrderDiscount() {
-        const discountInput = document.getElementById('orderDiscount');
-        const discount = parseFloat(discountInput.value);
+    // index.html - inside <script> tag
 
-        if (isNaN(discount) || discount < 0 || discount > 100) {
-            alert('Please enter a valid discount percentage (0-100).');
-            return;
+// --- Order Discount Logic (NOW SAVES TO SHEET) ---
+
+async function applyOrderDiscount() {
+    const discountInput = document.getElementById('orderDiscount');
+    const discount = parseFloat(discountInput.value);
+
+    if (isNaN(discount) || discount < 0 || discount > 100) {
+        alert('Please enter a valid discount percentage (0-100).');
+        return;
+    }
+
+    const updatesToSend = []; // Array to collect all updates for the sheet
+
+    // Apply discount to all displayed orders and prepare the update list
+    document.querySelectorAll('.order-card').forEach(card => {
+        const originalTotal = parseFloat(card.dataset.totalAmount);
+        const adjustedTotal = originalTotal * (1 - discount / 100);
+        
+        // Update the display in the order card
+        const adjustedTotalSpan = card.querySelector('.adjusted-total-display');
+        if (adjustedTotalSpan) {
+            adjustedTotalSpan.textContent = adjustedTotal.toFixed(2);
         }
 
-        // Apply discount to all displayed orders
-        document.querySelectorAll('.order-card').forEach(card => {
-            const originalTotal = parseFloat(card.dataset.totalAmount);
-            const adjustedTotal = originalTotal * (1 - discount / 100);
-            
-            // Update the display in the order card
-            const adjustedTotalSpan = card.querySelector('.adjusted-total-display');
-            if (adjustedTotalSpan) {
-                adjustedTotalSpan.textContent = adjustedTotal.toFixed(2);
-            }
+        // Update the local cache for sharing (still needed)
+        const sheetRow = parseInt(card.dataset.sheetRow);
+        const orderInCache = allOrdersCache.find(o => o.sheetRow === sheetRow);
+        if (orderInCache) {
+            orderInCache.adjustedTotal = adjustedTotal;
+        }
 
-            // Update the local cache for sharing
-            const sheetRow = parseInt(card.dataset.sheetRow);
-            const orderInCache = allOrdersCache.find(o => o.sheetRow === sheetRow);
-            if (orderInCache) {
-                orderInCache.adjustedTotal = adjustedTotal;
-            }
+        // Add to the list of updates for the sheet
+        updatesToSend.push({
+            sheetRow: sheetRow,
+            adjustedTotal: adjustedTotal.toFixed(2) // Send the new discounted total
         });
-        alert(`Order-level discount of ${discount}% applied to all displayed orders.`);
+    });
+
+    // --- NEW: Save the adjusted totals permanently to the sheet ---
+    if (updatesToSend.length > 0) {
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'updateAdjustedTotals', // NEW action handled by Apps Script
+                    updates: updatesToSend
+                }),
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                }
+            });
+
+            const result = await response.json();
+            if (response.ok && result.success) {
+                alert(`Order-level discount of ${discount}% applied and SAVED to the sheet for ${updatesToSend.length} orders.`);
+            } else {
+                 alert(`Discount applied locally, but FAILED to save to sheet: ${result.error || 'Unknown error.'}`);
+            }
+        } catch (error) {
+            alert('Discount applied locally, but network error occurred while saving to sheet: ' + error.message);
+        }
+    } else {
+        alert(`Order-level discount of ${discount}% applied to 0 displayed orders.`);
     }
+}
 
         /**
  * Processes cached orders, generates a summary message, and shares it via WhatsApp.
@@ -1222,3 +1260,4 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
