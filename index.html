@@ -422,7 +422,7 @@
                     <div class="item-card-header">
                         <h4>🍗 Chicken (whole)</h4>
                         <div class="price-display">
-                            $ <input type="number" class="price" step="0.01">
+                            $ <input type="number" class="price" value="0.00" step="0.01">
                         </div>
                     </div>
                     <div class="quantity-buttons">
@@ -439,7 +439,7 @@
                     <div class="item-card-header">
                         <h4>🥛 Fresh Milk</h4>
                         <div class="price-display">
-                            $ <input type="number" class="price" step="0.01">
+                            $ <input type="number" class="price" value="0.00" step="0.01">
                         </div>
                     </div>
                     <div class="quantity-buttons">
@@ -456,7 +456,7 @@
                     <div class="item-card-header">
                         <h4>🥚 Farm Eggs</h4>
                         <div class="price-display">
-                            $ <input type="number" class="price" step="0.01">
+                            $ <input type="number" class="price" value="0.00" step="0.01">
                         </div>
                     </div>
                     <div class="quantity-buttons">
@@ -473,7 +473,7 @@
                     <div class="item-card-header">
                         <h4>🧀 Paneer</h4>
                         <div class="price-display">
-                            $ <input type="number" class="price" step="0.01">
+                            $ <input type="number" class="price" value="0.00" step="0.01">
                         </div>
                     </div>
                     <div class="quantity-buttons">
@@ -523,6 +523,8 @@
 
     // Map to hold references to all item cards (default and custom)
     const itemCardMap = new Map();
+    // Cache of customer names for quick lookup (NEW)
+    let customerNameCache = new Set(); 
 
     // --- Initialization and Event Listeners ---
     document.addEventListener('DOMContentLoaded', function() {
@@ -533,6 +535,7 @@
         });
 
         // Load all items (default prices and custom items) from the sheet
+        // This is still called, but now it only updates the price if it's different from the 0.00 initial value
         loadAllItems();
         fetchAndDisplayAllOrders();
 
@@ -571,6 +574,9 @@
             e.preventDefault();
             submitOrder();
         });
+
+        // Listener for customer name input (NEW)
+        document.getElementById('customerName').addEventListener('input', checkDuplicateOrder);
     });
 
     // --- Data Persistence ---
@@ -615,7 +621,7 @@
             }
         } catch (error) {
             console.error('Error loading items:', error);
-            alert('Failed to load item prices and custom items from the sheet.');
+            // Alert removed to minimize user annoyance, prices default to 0.00
         }
     }
 
@@ -712,13 +718,21 @@
         itemCard.querySelectorAll('.quantity-buttons button').forEach(button => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
+                
+                const price = parseFloat(itemCard.querySelector('.price').value) || 0;
+                
+                // ⭐ CHANGE 1 (Existing Logic): Check if price is 0 (still loading)
+                if (price === 0) {
+                    alert('Item price is still loading. Please wait a moment and try again.');
+                    return; 
+                }
+
                 let quantity = parseFloat(this.dataset.qty);
                 
                 // For custom quantity input, update the value
                 const otherInput = itemCard.querySelector('.quantity-buttons input.other');
                 if (otherInput) otherInput.value = '';
 
-                const price = parseFloat(itemCard.querySelector('.price').value) || 0;
                 updateSelectedItems(itemId, quantity, price);
                 
                 itemCard.querySelectorAll('.quantity-buttons button').forEach(btn => btn.classList.remove('active'));
@@ -732,6 +746,15 @@
             otherInput.addEventListener('input', function() {
                 const quantity = parseFloat(this.value);
                 const price = parseFloat(itemCard.querySelector('.price').value) || 0;
+                
+                // ⭐ CHANGE 1 (Existing Logic): Check if price is 0 (still loading)
+                if (price === 0 && quantity > 0) {
+                    alert('Item price is still loading. Please wait a moment and try again.');
+                    this.value = ''; // Clear input
+                    updateSelectedItems(itemId, 0, price);
+                    return;
+                }
+
                 if (!isNaN(quantity) && quantity >= 0) {
                     updateSelectedItems(itemId, quantity, price);
                 } else if (!this.value) {
@@ -779,8 +802,6 @@
 
     // --- Helper Functions ---
     
-    // updateItemPrice is removed as item-level discount is gone.
-
     function updateSelectedItems(itemId, quantity, price) {
         const itemCard = itemCardMap.get(itemId);
         if (!itemCard) return;
@@ -843,75 +864,83 @@
         document.getElementById('totalAmount').textContent = total.toFixed(2);
     }
     
-    // --- Order Discount Logic (NEW) ---
+    // --- Duplicate Order Prevention (NEW) ---
+    function checkDuplicateOrder() {
+        const customerNameInput = document.getElementById('customerName');
+        const submitBtn = document.getElementById('submitOrder');
+        const customerName = customerNameInput.value.trim();
 
-    // index.html - inside <script> tag
-
-// --- Order Discount Logic (NOW SAVES TO SHEET) ---
-
-async function applyOrderDiscount() {
-    const discountInput = document.getElementById('orderDiscount');
-    const discount = parseFloat(discountInput.value);
-
-    if (isNaN(discount) || discount < 0 || discount > 100) {
-        alert('Please enter a valid discount percentage (0-100).');
-        return;
+        if (customerName && customerNameCache.has(customerName)) {
+            customerNameInput.style.border = '2px solid var(--danger-color)';
+            submitBtn.disabled = true;
+            submitBtn.textContent = '❌ Duplicate Order (Clear Orders or Change Name)';
+        } else {
+            customerNameInput.style.border = '1px solid var(--border-color)';
+            submitBtn.disabled = false;
+            submitBtn.textContent = '📝 Submit Order';
+        }
     }
 
-    const updatesToSend = []; // Array to collect all updates for the sheet
 
-    // Apply discount to all displayed orders and prepare the update list
-    document.querySelectorAll('.order-card').forEach(card => {
-        const originalTotal = parseFloat(card.dataset.totalAmount);
-        const adjustedTotal = originalTotal * (1 - discount / 100);
-        
-        // Update the display in the order card
-        const adjustedTotalSpan = card.querySelector('.adjusted-total-display');
-        if (adjustedTotalSpan) {
-            adjustedTotalSpan.textContent = adjustedTotal.toFixed(2);
+    // --- Order Discount Logic (NOW SAVES TO SHEET) ---
+
+    async function applyOrderDiscount() {
+        const discountInput = document.getElementById('orderDiscount');
+        const discount = parseFloat(discountInput.value);
+
+        if (isNaN(discount) || discount < 0 || discount > 100) {
+            alert('Please enter a valid discount percentage (0-100).');
+            return;
         }
 
-        // Update the local cache for sharing (still needed)
-        const sheetRow = parseInt(card.dataset.sheetRow);
-        const orderInCache = allOrdersCache.find(o => o.sheetRow === sheetRow);
-        if (orderInCache) {
-            orderInCache.adjustedTotal = adjustedTotal;
-        }
+        const updatesToSend = []; // Array to collect all updates for the sheet
 
-        // Add to the list of updates for the sheet
-        updatesToSend.push({
-            sheetRow: sheetRow,
-            adjustedTotal: adjustedTotal.toFixed(2) // Send the new discounted total
-        });
-    });
-
-    // --- NEW: Save the adjusted totals permanently to the sheet ---
-    if (updatesToSend.length > 0) {
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({
-                    action: 'updateAdjustedTotals', // NEW action handled by Apps Script
-                    updates: updatesToSend
-                }),
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8'
-                }
-            });
-
-            const result = await response.json();
-            if (response.ok && result.success) {
-                alert(`Order-level discount of ${discount}% applied and SAVED to the sheet for ${updatesToSend.length} orders.`);
-            } else {
-                 alert(`Discount applied locally, but FAILED to save to sheet: ${result.error || 'Unknown error.'}`);
+        // Apply discount to all displayed orders and prepare the update list
+        document.querySelectorAll('.order-card').forEach(card => {
+            const originalTotal = parseFloat(card.dataset.totalAmount);
+            const adjustedTotal = originalTotal * (1 - discount / 100);
+            
+            // Update the display in the order card
+            const adjustedTotalSpan = card.querySelector('.adjusted-total-display');
+            if (adjustedTotalSpan) {
+                adjustedTotalSpan.textContent = adjustedTotal.toFixed(2);
             }
-        } catch (error) {
-            alert('Discount applied locally, but network error occurred while saving to sheet: ' + error.message);
+
+            // Add to the list of updates for the sheet
+            updatesToSend.push({
+                customerName: card.dataset.customerName, // Use name/timestamp for delete-proof updates
+                timestamp: card.dataset.timestamp,
+                adjustedTotal: adjustedTotal.toFixed(2) // Send the new discounted total
+            });
+        });
+
+        // --- NEW: Save the adjusted totals permanently to the sheet ---
+        if (updatesToSend.length > 0) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'updateAdjustedTotals', // NEW action handled by Apps Script
+                        updates: updatesToSend
+                    }),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    }
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert(`Order-level discount of ${discount}% applied and SAVED to the sheet for ${updatesToSend.length} orders.`);
+                } else {
+                    alert(`Discount applied locally, but FAILED to save to sheet: ${result.error || 'Unknown error.'}`);
+                }
+            } catch (error) {
+                alert('Discount applied locally, but network error occurred while saving to sheet: ' + error.message);
+            }
+        } else {
+            alert(`Order-level discount of ${discount}% applied to 0 displayed orders.`);
         }
-    } else {
-        alert(`Order-level discount of ${discount}% applied to 0 displayed orders.`);
     }
-}
 
         /**
  * Processes cached orders, generates a summary message, and shares it via WhatsApp.
@@ -1016,6 +1045,9 @@ async function fetchAndDisplayAllOrders() {
 
     // Clear any existing discount
     document.getElementById('orderDiscount').value = 0;
+    
+    // Clear cache (NEW)
+    customerNameCache.clear(); 
 
     try {
         const response = await fetch(API_URL, {
@@ -1040,6 +1072,9 @@ async function fetchAndDisplayAllOrders() {
             }
             
             allOrdersCache.forEach(order => {
+                // Populate customer name cache (NEW)
+                customerNameCache.add(order.customerName); 
+                
                 const orderCard = document.createElement('div');
                 orderCard.className = 'order-card';
                 // Convert timestamp to local date string for display
@@ -1056,7 +1091,9 @@ async function fetchAndDisplayAllOrders() {
 
                 // Store total for discount calculation
                 orderCard.dataset.totalAmount = order.totalAmount;
-                orderCard.dataset.sheetRow = order.sheetRow; 
+                // ⭐ CHANGE 3: Store customerName and timestamp for deletion
+                orderCard.dataset.customerName = order.customerName; 
+                orderCard.dataset.timestamp = order.timestamp; 
                 
                 // Use the adjusted total from the sheet if available, otherwise use totalAmount
                 const initialAdjustedTotal = order.adjustedTotal !== undefined ? order.adjustedTotal : order.totalAmount;
@@ -1069,7 +1106,9 @@ async function fetchAndDisplayAllOrders() {
                             <strong>Total:</strong> $${order.totalAmount.toFixed(2)}<br>
                             <strong>Adjusted Total:</strong> <span class="adjusted-total-display adjusted-total">$${initialAdjustedTotal.toFixed(2)}</span>
                         </div>
-                        <button class="remove-btn delete-order-btn" data-row="${order.sheetRow}">Delete</button>
+                        <button class="remove-btn delete-order-btn" 
+                                data-name="${order.customerName}" 
+                                data-timestamp="${order.timestamp}">Delete</button>
                     </div>
                     <hr style="margin: 8px 0;">
                     <strong>Items:</strong>
@@ -1080,6 +1119,8 @@ async function fetchAndDisplayAllOrders() {
                 // Add event listener immediately after creating the button
                 orderCard.querySelector('.delete-order-btn').addEventListener('click', deleteIndividualOrderFrontend);
             });
+            // ⭐ CHANGE 2: Run duplicate check after fetching orders
+            checkDuplicateOrder();
         } else {
             console.error('API Error:', result.error || 'Failed to fetch orders.');
             allOrdersList.innerHTML = '<div class="setup-notice">Error fetching orders. Check console.</div>';
@@ -1098,10 +1139,11 @@ async function fetchAndDisplayAllOrders() {
  */
 async function deleteIndividualOrderFrontend(event) {
     const button = event.currentTarget;
-    const sheetRow = button.dataset.row;
-    const customerName = button.closest('.order-card').querySelector('strong').nextSibling.textContent.trim();
+    // ⭐ CHANGE 3: Use name and timestamp instead of row number
+    const customerName = button.dataset.name;
+    const timestamp = button.dataset.timestamp; 
 
-    const confirmation = confirm(`Are you sure you want to delete the order for ${customerName}? (Row ${sheetRow})`);
+    const confirmation = confirm(`Are you sure you want to delete the order for ${customerName}? (Time: ${new Date(timestamp).toLocaleString()})`);
     
     if (!confirmation) {
         return; 
@@ -1115,7 +1157,11 @@ async function deleteIndividualOrderFrontend(event) {
             method: 'POST',
             body: JSON.stringify({
                 action: 'deleteIndividualOrder',
-                sheetRow: sheetRow
+                // ⭐ CHANGE 3: Pass name and timestamp
+                data: {
+                    customerName: customerName,
+                    timestamp: timestamp 
+                }
             }),
             headers: {
                 'Content-Type': 'text/plain;charset=utf-8'
@@ -1125,11 +1171,11 @@ async function deleteIndividualOrderFrontend(event) {
         const result = await response.json();
         
         if (response.ok && result.success) {
-            alert(`Order for ${customerName} (Row ${sheetRow}) successfully deleted!`);
-            // Visually remove the card and refresh the list to sync row numbers
+            alert(`Order for ${customerName} successfully deleted!`);
+            // Visually remove the card and refresh the list to sync the UI
             button.closest('.order-card').remove();
             
-            // Re-run the fetch to get updated row numbers from the sheet, which is important
+            // Re-run the fetch to get updated data and sync UI
             fetchAndDisplayAllOrders(); 
         } else {
             alert('Failed to delete order: ' + (result.error || 'Unknown error.'));
@@ -1201,11 +1247,35 @@ async function deleteAllOrders() {
             return;
         }
 
+        // ⭐ CHANGE 2 (Existing Logic): Prevent submission if duplicate is detected
+        if (customerNameCache.has(customerName)) {
+            alert('An order for this customer already exists. Please delete the existing order or change the customer name.');
+            return;
+        }
+        
         const selectedItems = document.querySelectorAll('.selected-item');
         if (selectedItems.length === 0) {
             alert('Please select at least one item');
             return;
         }
+        
+        // ⭐ CHANGE 1 (Existing Logic): Final check for zero-priced items
+        let hasZeroPriceItem = false;
+        selectedItems.forEach(item => {
+            const total = parseFloat(item.querySelector('.total').textContent);
+            if (total === 0) {
+                hasZeroPriceItem = true;
+            }
+        });
+        
+        if (hasZeroPriceItem) {
+            alert('Cannot submit order with one or more items priced at $0.00. Please ensure all prices are loaded and correct.');
+            return;
+        }
+        
+        const submitBtn = document.getElementById('submitOrder');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
 
         const order = {
             customerName: customerName,
@@ -1254,6 +1324,9 @@ async function deleteAllOrders() {
             }
         } catch (error) {
             alert('Error submitting order: ' + error.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '📝 Submit Order';
         }
     }
     </script>
