@@ -930,7 +930,8 @@
 
                 const result = await response.json();
                 if (response.ok && result.success) {
-                    alert(`Order-level discount of ${discount}% applied and SAVED to the sheet for ${updatesToSend.length} orders.`);
+                    alert(`Order-level discount of ${discount}% applied and SAVED to the sheet for ${updatesToSend.length} orders. Refreshing below list...`);
+                    fetchAndDisplayAllOrders();
                 } else {
                     alert(`Discount applied locally, but FAILED to save to sheet: ${result.error || 'Unknown error.'}`);
                 }
@@ -1333,3 +1334,4 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
