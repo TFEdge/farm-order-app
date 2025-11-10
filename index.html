@@ -329,6 +329,16 @@
         }
     }
 
+    /* NEW: Hide spin buttons for number inputs (Fix for Total Paid field) */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+    input[type=number] {
+        -moz-appearance: textfield; /* Firefox */
+    }
+
     /* Updated All Orders Section */
     .section-divider {
         display: none;
@@ -359,33 +369,28 @@
         font-size: 15px;
     }
     
-    /* MODIFIED: Styles for the new totals/discount section - VERTICAL RIGHT ALIGNED */
+    /* NEW: Styles for the new totals/discount section */
     .order-summary-controls {
-        display: flex; /* Change to flex for vertical stacking */
-        flex-direction: column; /* Stack items vertically */
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         gap: 10px;
         margin-bottom: 15px;
         padding-bottom: 15px;
         border-bottom: 1px solid #eee;
-        align-items: flex-end; /* Align all children to the right */
     }
     
     .total-display {
-        /* Remove grid columns as we are using flexbox now */
+        grid-column: 1 / span 2;
         font-weight: bold;
         font-size: 16px;
         padding: 5px 0;
-        text-align: right; /* Ensure text is right-aligned */
-        width: 100%; /* Take full width to allow text-align to work */
+        text-align: right;
     }
 
     .discount-controls, .paid-controls { 
         display: flex;
         gap: 5px;
         align-items: center;
-        /* Ensure controls are right-aligned within their container */
-        justify-content: flex-end; 
-        width: 100%; /* Take full width */
     }
 
     .discount-controls label, .paid-controls label {
@@ -394,8 +399,7 @@
     }
 
     .discount-controls input, .paid-controls input {
-        /* Increased width to 80px (from 60px) */
-        width: 80px; 
+        width: 60px;
         padding: 4px;
         border: 1px solid #ccc;
         border-radius: 4px;
@@ -427,17 +431,11 @@
     
     @media (max-width: 600px) {
         .order-summary-controls {
-            /* The vertical stack already works, no complex media query needed */
-            align-items: flex-end;
+            grid-template-columns: 1fr;
         }
         .total-display {
-            /* Full width right alignment is maintained */
-            text-align: right; 
-        }
-        /* Ensure buttons are still wide on small screens if they need to be */
-        .apply-discount-btn {
-            grid-column: 1 / span 1; /* Not strictly necessary with flex, but safe */
-            width: 100%;
+            grid-column: 1 / span 1;
+            text-align: left;
         }
     }
     </style>
@@ -548,7 +546,7 @@
             
             <div class="order-summary-controls">
                 <div class="total-display">
-                    Combined Orders Total: $<span id="combinedOrdersTotal">0.00</span>
+                    Orders Total: $<span id="combinedOrdersTotal">0.00</span>
                 </div>
                 <div class="discount-controls">
                     <label for="orderDiscount">Discount %:</label>
