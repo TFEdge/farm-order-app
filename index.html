@@ -369,28 +369,33 @@
         font-size: 15px;
     }
     
-    /* NEW: Styles for the new totals/discount section */
+    /* MODIFIED: Styles for the new totals/discount section - VERTICAL RIGHT ALIGNED */
     .order-summary-controls {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
+        display: flex; /* Change to flex */
+        flex-direction: column; /* Stack vertically */
         gap: 10px;
         margin-bottom: 15px;
         padding-bottom: 15px;
         border-bottom: 1px solid #eee;
+        align-items: flex-end; /* Align all items to the right */
     }
     
     .total-display {
-        grid-column: 1 / span 2;
+        /* Removed grid columns */
         font-weight: bold;
         font-size: 16px;
         padding: 5px 0;
-        text-align: right;
+        text-align: right; 
+        width: 100%; /* Take full width to allow text-align to work */
     }
 
     .discount-controls, .paid-controls { 
         display: flex;
         gap: 5px;
         align-items: center;
+        /* Ensure internal content is right-aligned */
+        justify-content: flex-end; 
+        width: 100%; /* Take full width to allow justify-content to work */
     }
 
     .discount-controls label, .paid-controls label {
@@ -431,11 +436,10 @@
     
     @media (max-width: 600px) {
         .order-summary-controls {
-            grid-template-columns: 1fr;
+            align-items: flex-end;
         }
         .total-display {
-            grid-column: 1 / span 1;
-            text-align: left;
+            text-align: right;
         }
     }
     </style>
@@ -546,7 +550,7 @@
             
             <div class="order-summary-controls">
                 <div class="total-display">
-                    Orders Total: $<span id="combinedOrdersTotal">0.00</span>
+                    Combined Orders Total: $<span id="combinedOrdersTotal">0.00</span>
                 </div>
                 <div class="discount-controls">
                     <label for="orderDiscount">Discount %:</label>
@@ -556,7 +560,7 @@
                     <label for="totalPaid">Total Paid $:</label>
                     <input type="number" id="totalPaid" value="0.00" min="0" step="0.01" data-field="paid">
                 </div>
-                <button type="button" id="applyDiscountBtn" class="secondary-btn" style="grid-column: 1 / span 2; background: var(--secondary-color); color: white; border: none;">Apply Discount/Paid</button>
+                <button type="button" id="applyDiscountBtn" class="secondary-btn" style="width: 100%; background: var(--secondary-color); color: white; border: none;">Apply Discount/Paid</button>
             </div>
             <div id="allOrdersList">
                 <div class="setup-notice" style="display: none;">
@@ -985,15 +989,20 @@
             const paidAmount = totalOrdersAmount * (1 - discount / 100);
             paidInput.value = paidAmount.toFixed(2);
         } else if (source === 'paid') {
-            const paidAmount = parseFloat(paidInput.value) || 0;
+            // Read paid amount (can be partial/invalid string)
+            const paidAmount = parseFloat(paidInput.value) || 0; 
             
-            // Ensure paid amount does not exceed the total
-            const finalPaidAmount = Math.min(paidAmount, totalOrdersAmount);
-            paidInput.value = finalPaidAmount.toFixed(2);
-
-            const discountAmount = totalOrdersAmount - finalPaidAmount;
+            // Calculate the discount amount, ensuring it doesn't go below zero
+            const discountAmount = Math.max(0, totalOrdersAmount - paidAmount);
+            
+            // Calculate the discount percentage
             const discountPercent = (discountAmount / totalOrdersAmount) * 100;
+            
+            // Update the discount field instantly
             discountInput.value = discountPercent.toFixed(1);
+            
+            // IMPORTANT: The line to re-write paidInput.value has been removed 
+            // to allow the user to type freely.
         }
     }
 
@@ -1001,21 +1010,20 @@
     async function applyOrderDiscount() {
         const discountInput = document.getElementById('orderDiscount');
         const paidInput = document.getElementById('totalPaid');
-        const discount = parseFloat(discountInput.value);
-        const totalPaid = parseFloat(paidInput.value);
         
-        // Recalculate based on the paid amount before sending, in case user only typed in Paid box
+        // Final recalculation based on the user's potentially partial 'paid' input
+        // This is necessary to sync discount % with paid $ before submission
         calculatePaidAndDiscount('paid');
+        
         const finalDiscount = parseFloat(discountInput.value); 
-        const finalPaid = parseFloat(paidInput.value); 
-
+        const finalPaidFromInput = parseFloat(paidInput.value); // Use the raw input value here
+        
 
         if (isNaN(finalDiscount) || finalDiscount < 0 || finalDiscount > 100) {
             alert('Please ensure the discount percentage is valid (0-100).');
             return;
         }
         
-        // Find the combined total again for the alert message
         const combinedOrdersTotalElement = document.getElementById('combinedOrdersTotal');
         const totalOrdersAmount = parseFloat(combinedOrdersTotalElement.textContent.replace('$', '')) || 0;
         
@@ -1023,6 +1031,9 @@
              alert('No orders to apply a discount to.');
             return;
         }
+        
+        // Enforce constraint and format final paid amount
+        const finalPaid = Math.min(finalPaidFromInput, totalOrdersAmount); 
 
         const updatesToSend = []; // Array to collect all updates for the sheet
         const discountFactor = 1 - finalDiscount / 100;
@@ -1064,6 +1075,8 @@
                 const result = await response.json();
                 if (response.ok && result.success) {
                     alert(`Order-level total paid recorded as $${finalPaid.toFixed(2)} (Discount: ${finalDiscount.toFixed(1)}%) and SAVED to the sheet for ${updatesToSend.length} orders. Refreshing below list...`);
+                    // IMPORTANT: Re-format the paid input to reflect the *saved* constrained value
+                    paidInput.value = finalPaid.toFixed(2);
                     fetchAndDisplayAllOrders();
                 } else {
                     alert(`Discount applied locally, but FAILED to save to sheet: ${result.error || 'Unknown error.'}`);
