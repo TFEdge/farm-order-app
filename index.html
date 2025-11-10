@@ -536,7 +536,7 @@
 
         // Load all items (default prices and custom items) from the sheet
         // This is still called, but now it only updates the price if it's different from the 0.00 initial value
-        loadAllItems();
+        await loadAllItems();
         fetchAndDisplayAllOrders();
 
         // Add event listeners to all existing default item cards
@@ -1334,6 +1334,7 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
 
 
 
