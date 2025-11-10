@@ -358,20 +358,44 @@
         margin: 0;
         font-size: 15px;
     }
+    
+    /* NEW: Styles for the new totals/discount section */
+    .order-summary-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .total-display {
+        grid-column: 1 / span 2;
+        font-weight: bold;
+        font-size: 16px;
+        padding: 5px 0;
+        text-align: right;
+    }
 
-    .discount-controls { /* NEW: Container for discount input and button */
+    .discount-controls, .paid-controls { 
         display: flex;
         gap: 5px;
         align-items: center;
     }
 
-    .discount-controls input {
-        width: 50px;
+    .discount-controls label, .paid-controls label {
+        white-space: nowrap;
+        font-size: 14px;
+    }
+
+    .discount-controls input, .paid-controls input {
+        width: 60px;
         padding: 4px;
         border: 1px solid #ccc;
         border-radius: 4px;
         font-size: 13px;
         text-align: right;
+        box-sizing: border-box;
     }
 
     .discount-controls button {
@@ -393,6 +417,16 @@
     .adjusted-total {
         font-weight: bold;
         color: var(--danger-color);
+    }
+    
+    @media (max-width: 600px) {
+        .order-summary-controls {
+            grid-template-columns: 1fr;
+        }
+        .total-display {
+            grid-column: 1 / span 1;
+            text-align: left;
+        }
     }
     </style>
 </head>
@@ -498,13 +532,22 @@
         <div class="all-orders-section">
             <div class="orders-header">
                 <h3>📱 All Orders (From All Users)</h3>
-                <div class="discount-controls">
-                    <label for="orderDiscount">Discount %:</label>
-                    <input type="number" id="orderDiscount" value="0" min="0" max="100" step="0.1">
-                    <button type="button" id="applyDiscountBtn" class="secondary-btn">Apply</button>
-                </div>
             </div>
             
+            <div class="order-summary-controls">
+                <div class="total-display">
+                    Combined Orders Total: $<span id="combinedOrdersTotal">0.00</span>
+                </div>
+                <div class="discount-controls">
+                    <label for="orderDiscount">Discount %:</label>
+                    <input type="number" id="orderDiscount" value="0" min="0" max="100" step="0.1" data-field="discount">
+                </div>
+                <div class="paid-controls">
+                    <label for="totalPaid">Total Paid $:</label>
+                    <input type="number" id="totalPaid" value="0.00" min="0" step="0.01" data-field="paid">
+                </div>
+                <button type="button" id="applyDiscountBtn" class="secondary-btn" style="grid-column: 1 / span 2; background: var(--secondary-color); color: white; border: none;">Apply Discount/Paid</button>
+            </div>
             <div id="allOrdersList">
                 <div class="setup-notice" style="display: none;">
                     Please configure Google Sheets URL to see all orders
@@ -527,6 +570,8 @@
     const itemCardMap = new Map();
     // Cache of customer names for quick lookup (NEW)
     let customerNameCache = new Set(); 
+    // Global variable to store fetched orders for sharing and total calculation
+    let allOrdersCache = []; 
 
     // --- Initialization and Event Listeners ---
     document.addEventListener('DOMContentLoaded', function() {
@@ -537,7 +582,6 @@
         });
 
         // Load all items (default prices and custom items) from the sheet
-        // This is still called, but now it only updates the price if it's different from the 0.00 initial value
         loadAllItems()
             .then(() => {
                 // This block runs ONLY after loadAllItems is complete.
@@ -575,11 +619,16 @@
             deleteAllOrders();
         });
 
-        // Apply Discount button listener (NEW)
+        // Apply Discount button listener (UPDATED)
         document.getElementById('applyDiscountBtn').addEventListener('click', function(e) {
             e.preventDefault();
             applyOrderDiscount();
         });
+        
+        // NEW: Input listeners for discount and paid to calculate the other
+        document.getElementById('orderDiscount').addEventListener('input', () => calculatePaidAndDiscount('discount'));
+        document.getElementById('totalPaid').addEventListener('input', () => calculatePaidAndDiscount('paid'));
+
 
         // Submit order button listener
         document.getElementById('submitOrder').addEventListener('click', function(e) {
@@ -909,23 +958,70 @@
     }
 
 
-    // --- Order Discount Logic (NOW SAVES TO SHEET) ---
+    // --- Order Discount/Paid Logic (UPDATED) ---
 
+    // NEW: Function to automatically calculate the discount or paid amount
+    function calculatePaidAndDiscount(source) {
+        const combinedOrdersTotalElement = document.getElementById('combinedOrdersTotal');
+        const totalOrdersAmount = parseFloat(combinedOrdersTotalElement.textContent.replace('$', '')) || 0;
+        
+        if (totalOrdersAmount === 0) return;
+
+        const discountInput = document.getElementById('orderDiscount');
+        const paidInput = document.getElementById('totalPaid');
+        
+        if (source === 'discount') {
+            const discount = parseFloat(discountInput.value) || 0;
+            const paidAmount = totalOrdersAmount * (1 - discount / 100);
+            paidInput.value = paidAmount.toFixed(2);
+        } else if (source === 'paid') {
+            const paidAmount = parseFloat(paidInput.value) || 0;
+            
+            // Ensure paid amount does not exceed the total
+            const finalPaidAmount = Math.min(paidAmount, totalOrdersAmount);
+            paidInput.value = finalPaidAmount.toFixed(2);
+
+            const discountAmount = totalOrdersAmount - finalPaidAmount;
+            const discountPercent = (discountAmount / totalOrdersAmount) * 100;
+            discountInput.value = discountPercent.toFixed(1);
+        }
+    }
+
+    // UPDATED: Apply the calculated discount (derived from discount % or paid $) to all orders
     async function applyOrderDiscount() {
         const discountInput = document.getElementById('orderDiscount');
+        const paidInput = document.getElementById('totalPaid');
         const discount = parseFloat(discountInput.value);
+        const totalPaid = parseFloat(paidInput.value);
+        
+        // Recalculate based on the paid amount before sending, in case user only typed in Paid box
+        calculatePaidAndDiscount('paid');
+        const finalDiscount = parseFloat(discountInput.value); 
+        const finalPaid = parseFloat(paidInput.value); 
 
-        if (isNaN(discount) || discount < 0 || discount > 100) {
-            alert('Please enter a valid discount percentage (0-100).');
+
+        if (isNaN(finalDiscount) || finalDiscount < 0 || finalDiscount > 100) {
+            alert('Please ensure the discount percentage is valid (0-100).');
+            return;
+        }
+        
+        // Find the combined total again for the alert message
+        const combinedOrdersTotalElement = document.getElementById('combinedOrdersTotal');
+        const totalOrdersAmount = parseFloat(combinedOrdersTotalElement.textContent.replace('$', '')) || 0;
+        
+        if (totalOrdersAmount === 0) {
+             alert('No orders to apply a discount to.');
             return;
         }
 
         const updatesToSend = []; // Array to collect all updates for the sheet
+        const discountFactor = 1 - finalDiscount / 100;
 
         // Apply discount to all displayed orders and prepare the update list
         document.querySelectorAll('.order-card').forEach(card => {
             const originalTotal = parseFloat(card.dataset.totalAmount);
-            const adjustedTotal = originalTotal * (1 - discount / 100);
+            // Calculate the adjusted total for EACH order based on the final discount percentage
+            const adjustedTotal = originalTotal * discountFactor; 
             
             // Update the display in the order card
             const adjustedTotalSpan = card.querySelector('.adjusted-total-display');
@@ -935,7 +1031,7 @@
 
             // Add to the list of updates for the sheet
             updatesToSend.push({
-                customerName: card.dataset.customerName, // Use name/timestamp for delete-proof updates
+                customerName: card.dataset.customerName, 
                 timestamp: card.dataset.timestamp,
                 adjustedTotal: adjustedTotal.toFixed(2) // Send the new discounted total
             });
@@ -957,7 +1053,7 @@
 
                 const result = await response.json();
                 if (response.ok && result.success) {
-                    alert(`Order-level discount of ${discount}% applied and SAVED to the sheet for ${updatesToSend.length} orders. Refreshing below list...`);
+                    alert(`Order-level total paid recorded as $${finalPaid.toFixed(2)} (Discount: ${finalDiscount.toFixed(1)}%) and SAVED to the sheet for ${updatesToSend.length} orders. Refreshing below list...`);
                     fetchAndDisplayAllOrders();
                 } else {
                     alert(`Discount applied locally, but FAILED to save to sheet: ${result.error || 'Unknown error.'}`);
@@ -966,7 +1062,7 @@
                 alert('Discount applied locally, but network error occurred while saving to sheet: ' + error.message);
             }
         } else {
-            alert(`Order-level discount of ${discount}% applied to 0 displayed orders.`);
+            alert(`Order-level discount of ${finalDiscount.toFixed(1)}% applied to 0 displayed orders.`);
         }
     }
 
@@ -1047,8 +1143,16 @@ function shareOrders() {
     });
     
     message += "--- Grand Totals ---\n";
-    message += `Grand Total: $${grandTotal.toFixed(2)}\n`;
-    message += `Grand Adjusted Total: $${grandAdjustedTotal.toFixed(2)}\n`; // NEW: Grand adjusted total
+    message += `Grand Total (Original): $${grandTotal.toFixed(2)}\n`;
+    message += `Grand Adjusted Total (Paid): $${grandAdjustedTotal.toFixed(2)}\n`; // UPDATED label
+    
+    // Get the calculated discount/paid fields for final message
+    const totalOrdersAmount = grandTotal;
+    const totalPaid = grandAdjustedTotal;
+    const totalDiscountAmount = totalOrdersAmount - totalPaid;
+    const totalDiscountPercent = totalOrdersAmount > 0 ? (totalDiscountAmount / totalOrdersAmount) * 100 : 0;
+    
+    message += `Applied Discount: ${totalDiscountPercent.toFixed(1)}% ($${totalDiscountAmount.toFixed(2)})\n`; // Show final discount applied
 
     // 3. Initiate WhatsApp Sharing
     const encodedMessage = encodeURIComponent(message);
@@ -1059,7 +1163,46 @@ function shareOrders() {
 
         // --- All Orders / Sharing Logic ---
 
-let allOrdersCache = []; // Global variable to store fetched orders for sharing
+/**
+ * Calculates the sum of all original order totals from the cache.
+ */
+function calculateCombinedOrdersTotal() {
+    return allOrdersCache.reduce((sum, order) => sum + order.totalAmount, 0);
+}
+
+/**
+ * Calculates the sum of all adjusted order totals from the cache.
+ */
+function calculateCombinedOrdersAdjustedTotal() {
+    return allOrdersCache.reduce((sum, order) => sum + (order.adjustedTotal !== undefined ? order.adjustedTotal : order.totalAmount), 0);
+}
+
+/**
+ * Updates the combined totals display and the discount/paid controls.
+ */
+function updateCombinedOrdersDisplay() {
+    const totalOrdersAmount = calculateCombinedOrdersTotal();
+    const totalAdjustedAmount = calculateCombinedOrdersAdjustedTotal();
+    
+    document.getElementById('combinedOrdersTotal').textContent = totalOrdersAmount.toFixed(2);
+    
+    // Calculate current discount % based on fetched adjusted total
+    let discountPercent = 0;
+    let paidAmount = totalAdjustedAmount;
+    
+    if (totalOrdersAmount > 0) {
+        const discountAmount = totalOrdersAmount - totalAdjustedAmount;
+        discountPercent = (discountAmount / totalOrdersAmount) * 100;
+        // Set discount/paid fields to reflect the value currently SAVED in the sheet
+        document.getElementById('orderDiscount').value = discountPercent.toFixed(1);
+        document.getElementById('totalPaid').value = paidAmount.toFixed(2);
+    } else {
+        // If there are no orders, reset the controls
+        document.getElementById('orderDiscount').value = 0;
+        document.getElementById('totalPaid').value = 0.00;
+    }
+}
+
 
 /**
  * Fetches all orders from the Google Sheet and updates the display.
@@ -1073,10 +1216,7 @@ async function fetchAndDisplayAllOrders() {
     // Set immediate loading message for orders
     allOrdersList.innerHTML = '<div class="setup-notice" style="background: #d1ecf1; border-color: #bee5eb;">⏱️ Fetching all customer orders...</div>';
     
-    // Clear any existing discount
-    document.getElementById('orderDiscount').value = 0;
-    
-    // Clear cache (NEW)
+    // Clear cache 
     customerNameCache.clear(); 
 
     try {
@@ -1095,6 +1235,10 @@ async function fetchAndDisplayAllOrders() {
         
         if (response.ok && result.success && Array.isArray(result.result)) {
             allOrdersCache = result.result; // Store for sharing
+
+            // NEW: Update combined orders display and discount controls based on fetched data
+            updateCombinedOrdersDisplay(); 
+
             allOrdersList.innerHTML = ''; // Clear loading message
 
             if (allOrdersCache.length === 0) {
@@ -1133,8 +1277,8 @@ async function fetchAndDisplayAllOrders() {
                         <div>
                             <strong>Customer:</strong> ${order.customerName}<br>
                             <strong>Time:</strong> ${date}<br>
-                            <strong>Total:</strong> $${order.totalAmount.toFixed(2)}<br>
-                            <strong>Adjusted Total:</strong> <span class="adjusted-total-display adjusted-total">$${initialAdjustedTotal.toFixed(2)}</span>
+                            <strong>Total (Original):</strong> $${order.totalAmount.toFixed(2)}<br>
+                            <strong>Total Paid:</strong> <span class="adjusted-total-display adjusted-total">$${initialAdjustedTotal.toFixed(2)}</span>
                         </div>
                         <button class="remove-btn delete-order-btn" 
                                 data-name="${order.customerName}" 
@@ -1154,10 +1298,12 @@ async function fetchAndDisplayAllOrders() {
         } else {
             console.error('API Error:', result.error || 'Failed to fetch orders.');
             allOrdersList.innerHTML = '<div class="setup-notice">Error fetching orders. Check console.</div>';
+            updateCombinedOrdersDisplay(); // Reset display on error
         }
     } catch (error) {
         console.error('Error fetching orders:', error);
         allOrdersList.innerHTML = '<div class="setup-notice">Network Error. Check API URL.</div>';
+        updateCombinedOrdersDisplay(); // Reset display on error
     } finally {
         refreshBtn.textContent = '🔄 Refresh Orders';
         refreshBtn.disabled = false;
@@ -1258,6 +1404,7 @@ async function deleteAllOrders() {
             // Clear the display and refresh the orders list
             document.getElementById('allOrdersList').innerHTML = '<div class="setup-notice">No orders found in the sheet.</div>';
             allOrdersCache = []; // Clear local cache
+            updateCombinedOrdersDisplay(); // Reset totals
         } else {
             alert('Failed to delete orders: ' + (result.error || 'Unknown error.'));
         }
@@ -1363,10 +1510,3 @@ async function deleteAllOrders() {
 </body>
 
 </html>
-
-
-
-
-
-
-
