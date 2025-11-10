@@ -417,7 +417,9 @@
 
             <div class="items-section">
                 <h3>🛒 Select Items & Quantities:</h3>
-                
+                <div id="itemsLoadingMessage" class="setup-notice" style="display: block; background: #fff3cd; border-color: #ffeeba;">
+        ⏳ Loading prices and custom items from the database...
+    </div>
                 <div class="item-card" data-item="chicken">
                     <div class="item-card-header">
                         <h4>🍗 Chicken (whole)</h4>
@@ -595,6 +597,7 @@
      * Fetches all items from the Apps Script and updates the UI.
      */
     async function loadAllItems() {
+        const loadingMessage = document.getElementById('itemsLoadingMessage');
         try {
             const response = await fetch(API_URL, {
                 redirect: "follow",
@@ -623,15 +626,29 @@
                     });
                     // Initial update of total for selected items (since price might have changed)
                     updateOrderTotal(); 
+                    if (loadingMessage) loadingMessage.style.display = 'none'
                 } else {
                     console.error('API Error:', result.error);
+                    // API failure: Update the message to an error state
+                    if (loadingMessage) {
+                        loadingMessage.style.background = '#f8d7da';
+                        loadingMessage.style.borderColor = '#f5c6cb';
+                        loadingMessage.innerHTML = '⚠️ Failed to load item data. Prices may be $0.00.';
+                    }
                 }
             } else {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
         } catch (error) {
             console.error('Error loading items:', error);
-            // Alert removed to minimize user annoyance, prices default to 0.00
+          // Failure: Change the message to an error state
+            if (loadingMessage) {
+                loadingMessage.style.background = '#f8d7da';
+                loadingMessage.style.borderColor = '#f5c6cb';
+                loadingMessage.innerHTML = '⚠️ Failed to load item prices. Prices may be $0.00.';
+            }
+            // Crucially, re-throw the error so your .catch() block runs
+        throw error;
         }
     }
 
@@ -1052,8 +1069,10 @@ async function fetchAndDisplayAllOrders() {
     refreshBtn.textContent = 'Refreshing...';
     refreshBtn.disabled = true;
     const allOrdersList = document.getElementById('allOrdersList');
-    allOrdersList.innerHTML = 'Loading orders...';
 
+    // Set immediate loading message for orders
+    allOrdersList.innerHTML = '<div class="setup-notice" style="background: #d1ecf1; border-color: #bee5eb;">⏱️ Fetching all customer orders...</div>';
+    
     // Clear any existing discount
     document.getElementById('orderDiscount').value = 0;
     
@@ -1344,6 +1363,7 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
 
 
 
