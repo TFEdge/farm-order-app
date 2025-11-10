@@ -664,15 +664,7 @@
             console.error('Error saving item data:', error);
             // Optionally revert UI change or alert the user
         }
-    }
-
-        function sanitizeItemNameForId(name) {
-        // 1. Remove any leading numbers or non-word characters (handles emojis/unicode prefixes)
-        let sanitized = name.trim().replace(/^[\d\W_]+/, '');
-        // 2. Convert to lowercase
-        sanitized = sanitized.toLowerCase();        
-        return sanitized.replace(/^-+|-+$/g, '');
-    }
+    }      
 
     // --- UI Management ---
 
@@ -710,7 +702,7 @@
         const itemName = prompt('Enter item name:');
         if (!itemName) return;
 
-        const customItemId = sanitizeItemNameForId(itemName);
+       const customItemId = 'custom-' + Date.now();
         
         // Save the custom item first (name and initial price 0.00)
         await saveItemData(customItemId, itemName, 0.00);
@@ -1342,5 +1334,6 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
 
 
