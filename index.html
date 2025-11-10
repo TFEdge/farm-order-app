@@ -536,11 +536,21 @@
 
         // Load all items (default prices and custom items) from the sheet
         // This is still called, but now it only updates the price if it's different from the 0.00 initial value
-        loadAllItems();
-        fetchAndDisplayAllOrders();
-
-        // Add event listeners to all existing default item cards
-        itemCardMap.forEach(card => addItemEventListeners(card));
+        loadAllItems()
+            .then(() => {
+                // This block runs ONLY after loadAllItems is complete.
+                fetchAndDisplayAllOrders(); 
+                
+                // Add event listeners to all existing item cards (default + custom)
+                itemCardMap.forEach(card => addItemEventListeners(card));
+            })
+            .catch(error => {
+                console.error('Initial data loading failed:', error);
+                // Even if item loading fails, we should still try to display orders
+                fetchAndDisplayAllOrders();
+                // Add listeners for default items anyway
+                itemCardMap.forEach(card => addItemEventListeners(card));
+            });
         
         // Add Custom Item button listener
         document.getElementById('addCustomItem').addEventListener('click', addNewCustomItem);
@@ -1334,6 +1344,7 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
 
 
 
