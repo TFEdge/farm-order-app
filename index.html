@@ -1136,9 +1136,7 @@ function shareOrders() {
                 }
             }
 
-            // Add to total quantity summary
-            itemQuantitySummary.set(itemName, (itemQuantitySummary.get(itemName) || 0) + qty);
-            
+            itemQuantitySummary.set(summaryKey, (itemQuantitySummary.get(summaryKey) || 0) + qty);
             // Add to individual user order list
             individualOrderItems.push(`${itemName} (${qty})`);
         });
@@ -1548,4 +1546,5 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
 
