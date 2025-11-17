@@ -1121,6 +1121,21 @@ function shareOrders() {
                                     itemCardMap.get(itemId)?.querySelector('h4');
             const itemName = (itemNameElement?.value || itemNameElement?.textContent || itemId).trim().replace(':', '');
 
+            let summaryKey = itemName;
+            // Special handling for 'Fresh Milk' to separate 0.5 and 1 quantities
+            if (itemName.includes('Fresh Milk')) {
+                // If quantity is 0.5, use a key that includes the size
+                if (qty === 0.5) {
+                    summaryKey = '🥛 Fresh Milk (half)';
+                } else if (qty === 1) { 
+                    summaryKey = '🥛 Fresh Milk (gallon)';
+                } else {
+                    // For quantities like 2, 3, 4, or other inputs, 
+                    // we'll still use a distinct key to prevent mixing (e.g., 'Fresh Milk (Other)')
+                    summaryKey = `🥛 Fresh Milk (${qty})`;
+                }
+            }
+
             // Add to total quantity summary
             itemQuantitySummary.set(itemName, (itemQuantitySummary.get(itemName) || 0) + qty);
             
@@ -1533,3 +1548,4 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
