@@ -1111,6 +1111,8 @@ function shareOrders() {
         }
         
         const individualOrderItems = [];
+        let customFullGallonCount = 0;
+        let customHalfGallonCount = 0;
 
         // Aggregate total quantity and prepare user order list
         Object.entries(order.items).forEach(([itemId, itemData]) => {
@@ -1121,25 +1123,27 @@ function shareOrders() {
                                     itemCardMap.get(itemId)?.querySelector('h4');
             const itemName = (itemNameElement?.value || itemNameElement?.textContent || itemId).trim().replace(':', '');
 
-            let summaryKey = itemName;
-            // Special handling for 'Fresh Milk' to separate 0.5 and 1 quantities
             if (itemName.includes('Fresh Milk')) {
-                // If quantity is 0.5, use a key that includes the size
-                if (qty === 0.5) {
-                    summaryKey = '🥛 Fresh Milk (half)';
-                } else if (qty === 1) { 
-                    summaryKey = '🥛 Fresh Milk (gallon)';
-                } else {
-                    // For quantities like 2, 3, 4, or other inputs, 
-                    // we'll still use a distinct key to prevent mixing (e.g., 'Fresh Milk (Other)')
-                    summaryKey = `🥛 Fresh Milk (${qty})`;
-                }
+                     // 1. Calculate Full Gallon units from this order
+                     customFullGallonCount += Math.floor(qty); // 1.5 -> 1 full gallon
+                     
+                     // 2. Check for a 0.5 remainder and count it as one half-gallon unit
+                     if ((qty - Math.floor(qty)) >= 0.5) {
+                         customHalfGallonCount += 1; // 1.5 has a 0.5 remainder -> 1 half gallon
+                     }
+                 }
+            else {
+                // For all other items, aggregate as before
+                itemQuantitySummary.set(itemName, (itemQuantitySummary.get(itemName) || 0) + qty);
             }
-
-            itemQuantitySummary.set(summaryKey, (itemQuantitySummary.get(summaryKey) || 0) + qty);
+            
             // Add to individual user order list
             individualOrderItems.push(`${itemName} (${qty})`);
         });
+
+        // Use the customer-unit decomposition method for the final count
+        itemQuantitySummary.set('🥛 Fresh Milk (Full Gallons)', customFullGallonCount);
+        itemQuantitySummary.set('🥛 Fresh Milk (Half Gallons)', customHalfGallonCount);
         
         const adjustedTotal = order.adjustedTotal !== undefined ? order.adjustedTotal : order.totalAmount;
 
@@ -1546,5 +1550,6 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
 
 
