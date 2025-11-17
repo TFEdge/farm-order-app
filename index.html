@@ -1104,15 +1104,16 @@ function shareOrders() {
     let grandTotal = 0;
     let grandAdjustedTotal = 0;
 
+    let customFullGallonCount = 0;
+    let customHalfGallonCount = 0;
+
     allOrdersCache.forEach(order => {
         // Group individual orders
         if (!ordersByUser.has(order.customerName)) {
             ordersByUser.set(order.customerName, []);
         }
         
-        const individualOrderItems = [];
-        let customFullGallonCount = 0;
-        let customHalfGallonCount = 0;
+        const individualOrderItems = [];        
 
         // Aggregate total quantity and prepare user order list
         Object.entries(order.items).forEach(([itemId, itemData]) => {
@@ -1142,8 +1143,8 @@ function shareOrders() {
         });
 
         // Use the customer-unit decomposition method for the final count
-        itemQuantitySummary.set('🥛 Fresh Milk (Full Gallons)', customFullGallonCount);
-        itemQuantitySummary.set('🥛 Fresh Milk (Half Gallons)', customHalfGallonCount);
+        itemQuantitySummary.set('🥛 Fresh Milk (Full)', customFullGallonCount);
+        itemQuantitySummary.set('🥛 Fresh Milk (Half)', customHalfGallonCount);
         
         const adjustedTotal = order.adjustedTotal !== undefined ? order.adjustedTotal : order.totalAmount;
 
@@ -1550,6 +1551,7 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
 
 
 
