@@ -1122,28 +1122,13 @@ function shareOrders() {
             const itemNameElement = itemCardMap.get(itemId)?.querySelector('.item-name-input') || 
                                     itemCardMap.get(itemId)?.querySelector('h4');
             const itemName = (itemNameElement?.value || itemNameElement?.textContent || itemId).trim().replace(':', '');
-
-            if (itemName.includes('Fresh Milk')) {
-                     // 1. Calculate Full Gallon units from this order
-                     customFullGallonCount += Math.floor(qty); // 1.5 -> 1 full gallon
-                     
-                     // 2. Check for a 0.5 remainder and count it as one half-gallon unit
-                     if ((qty - Math.floor(qty)) >= 0.5) {
-                         customHalfGallonCount += 1; // 1.5 has a 0.5 remainder -> 1 half gallon
-                     }
-                 }
-            else {
                 // For all other items, aggregate as before
                 itemQuantitySummary.set(itemName, (itemQuantitySummary.get(itemName) || 0) + qty);
-            }
+            
             
             // Add to individual user order list
             individualOrderItems.push(`${itemName} (${qty})`);
         });
-
-        // Use the customer-unit decomposition method for the final count
-        itemQuantitySummary.set('🥛 Fresh Milk (Full)', customFullGallonCount);
-        itemQuantitySummary.set('🥛 Fresh Milk (Half)', customHalfGallonCount);
         
         const adjustedTotal = order.adjustedTotal !== undefined ? order.adjustedTotal : order.totalAmount;
 
@@ -1550,6 +1535,7 @@ async function deleteAllOrders() {
 </body>
 
 </html>
+
 
 
 
